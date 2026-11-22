@@ -1,0 +1,736 @@
+{
+  "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/v3.1.0/schemas/plugin.schema.json",
+  "version": "3.4.3",
+  "name": "s2sdk",
+  "description": "Test-local S2SDK provider for the imomoe-native-base loader fixture",
+  "author": "FunRounds native tests",
+  "website": "https://github.com/Mai-Ooizumi/Imomoe-FunRounds-CS2",
+  "license": "AGPL-3.0-or-later",
+  "entry": "bin/s2sdk",
+  "platforms": [],
+  "language": "cpp",
+  "dependencies": [
+    { "name": "polyhook", "constraints": "=2.5.7" }
+  ],
+  "methods": [
+    {
+      "name": "HookEvent",
+      "funcName": "HookEvent",
+      "group": "Events",
+      "description": "Accepts fixture event subscriptions without dispatching game callbacks.",
+      "paramTypes": [
+        { "name": "eventName", "type": "string" },
+        { "name": "callback", "type": "function", "ref": false, "prototype": "EventCallback" },
+        { "name": "hookMode", "type": "uint8", "ref": false }
+      ],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "UnhookEvent",
+      "funcName": "UnhookEvent",
+      "group": "Events",
+      "description": "Accepts fixture event unsubscriptions without dispatching game callbacks.",
+      "paramTypes": [
+        { "name": "eventName", "type": "string" },
+        { "name": "callback", "type": "function", "ref": false, "prototype": "EventCallback" },
+        { "name": "hookMode", "type": "uint8", "ref": false }
+      ],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "PrintToServer",
+      "funcName": "PrintToServer",
+      "group": "Console",
+      "description": "Writes fixture server messages to the host console.",
+      "paramTypes": [
+        { "name": "msg", "type": "string", "ref": false }
+      ],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "GetSchemaOffset",
+      "funcName": "GetSchemaOffset",
+      "group": "Schema",
+      "description": "Reports only the controller backlink needed by the no-client lifecycle probe.",
+      "paramTypes": [
+        { "name": "className", "type": "string" },
+        { "name": "memberName", "type": "string" }
+      ],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "AddConsoleCommand",
+      "funcName": "AddConsoleCommand",
+      "group": "Commands",
+      "description": "Accepts fixture commands without dispatching them.",
+      "paramTypes": [
+        { "name": "name", "type": "string" },
+        { "name": "description", "type": "string" },
+        { "name": "flags", "type": "int64", "ref": false },
+        { "name": "callback", "type": "function", "ref": false, "prototype": "ConCommandCallback" },
+        { "name": "hookMode", "type": "uint8", "ref": false }
+      ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "RemoveCommand",
+      "funcName": "RemoveCommand",
+      "group": "Commands",
+      "description": "Accepts fixture command removal during plugin shutdown.",
+      "paramTypes": [
+        { "name": "name", "type": "string" },
+        { "name": "callback", "type": "function", "ref": false, "prototype": "ConCommandCallback" }
+      ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "HasConsoleCommandCallbacks",
+      "funcName": "HasConsoleCommandCallbacks",
+      "group": "Commands",
+      "description": "Reports no retained fixture command callbacks.",
+      "paramTypes": [ { "name": "name", "type": "string" } ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "FindConVar",
+      "funcName": "FindConVar",
+      "group": "ConVars",
+      "description": "Reports every real engine ConVar as unavailable in the fixture.",
+      "paramTypes": [ { "name": "name", "type": "string" } ],
+      "retType": { "type": "uint64" }
+    },
+    {
+      "name": "UserMessageFindMessageIdByName",
+      "funcName": "UserMessageFindMessageIdByName",
+      "group": "UserMessages",
+      "description": "Reports no real game user messages in this fixture.",
+      "paramTypes": [ { "name": "messageName", "type": "string" } ],
+      "retType": { "type": "int16" }
+    },
+    {
+      "name": "QueryInterface",
+      "funcName": "QueryInterface",
+      "group": "Engine",
+      "description": "Returns the fixture schema-system interface.",
+      "paramTypes": [
+        { "name": "module", "type": "string" },
+        { "name": "name", "type": "string" }
+      ],
+      "retType": { "type": "ptr64" }
+    },
+    {
+      "name": "LoadGameConfigFile",
+      "funcName": "LoadGameConfigFile",
+      "group": "Gameconfig",
+      "description": "Accepts the native module's fixture gamedata path.",
+      "paramTypes": [
+        { "name": "paths", "type": "string[]", "ref": false }
+      ],
+      "retType": { "type": "uint32", "alias": { "name": "ConfigId" } }
+    },
+    {
+      "name": "CloseGameConfigFile",
+      "funcName": "CloseGameConfigFile",
+      "group": "Gameconfig",
+      "description": "Records native gamedata cleanup.",
+      "paramTypes": [
+        { "name": "id", "type": "uint32", "ref": false, "alias": { "name": "ConfigId" } }
+      ],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "GetGameConfigOffset",
+      "funcName": "GetGameConfigOffset",
+      "group": "Gameconfig",
+      "description": "Returns fixture Touch, IsWeapon, collision-notification, and grenade Detonate vtable slots.",
+      "paramTypes": [
+        { "name": "id", "type": "uint32", "ref": false, "alias": { "name": "ConfigId" } },
+        { "name": "name", "type": "string" }
+      ],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "GetGameConfigSignature",
+      "funcName": "GetGameConfigSignature",
+      "group": "Gameconfig",
+      "description": "Returns fixture TakeDamage and damage-constructor targets.",
+      "paramTypes": [
+        { "name": "id", "type": "uint32", "ref": false, "alias": { "name": "ConfigId" } },
+        { "name": "name", "type": "string" }
+      ],
+      "retType": { "type": "ptr64" }
+    },
+    {
+      "name": "GetGameConfigVTable",
+      "funcName": "GetGameConfigVTable",
+      "group": "Gameconfig",
+      "description": "Returns the fixture nav-physics and standard-grenade vtables.",
+      "paramTypes": [
+        { "name": "id", "type": "uint32", "ref": false },
+        { "name": "name", "type": "string" }
+      ],
+      "retType": { "type": "ptr64" }
+    },
+    {
+      "name": "EntPointerToEntHandle",
+      "funcName": "EntPointerToEntHandle",
+      "group": "Entities",
+      "description": "Maps the fixture entity to its stable handle.",
+      "paramTypes": [
+        { "name": "entity", "type": "ptr64", "ref": false }
+      ],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "EntHandleToEntPointer",
+      "funcName": "EntHandleToEntPointer",
+      "group": "Entities",
+      "description": "Returns the fixture entity for its stable handle.",
+      "paramTypes": [
+        { "name": "entityHandle", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "ptr64" }
+    },
+    {
+      "name": "GetMaxClients",
+      "funcName": "GetMaxClients",
+      "group": "Engine",
+      "description": "Provides the single client slot used by the Afterburn contract fixture.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "GetGameTickCount",
+      "funcName": "GetGameTickCount",
+      "group": "Engine",
+      "description": "The standalone host fixture has a fixed game tick of zero.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "GetGameTime",
+      "funcName": "GetGameTime",
+      "group": "Engine",
+      "description": "The standalone host fixture has a fixed game time of zero.",
+      "paramTypes": [],
+      "retType": { "type": "float" }
+    },
+    {
+      "name": "GetWeaponItemDefinition",
+      "funcName": "GetWeaponItemDefinition",
+      "group": "Weapons",
+      "description": "Returns no item definition for the fixture's empty server.",
+      "paramTypes": [
+        { "name": "entityHandle", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "uint16" }
+    },
+    {
+      "name": "GetEntityClassname",
+      "funcName": "GetEntityClassname",
+      "group": "Entities",
+      "description": "Reports the fake Ignite classname and fixture standard-grenade projectile classes.",
+      "paramTypes": [ { "name": "entityHandle", "type": "int32", "ref": false } ],
+      "retType": { "type": "string" }
+    },
+    {
+      "name": "GetEntSchemaEnt2",
+      "funcName": "GetEntSchemaEnt2",
+      "group": "Schema",
+      "description": "Exposes the pawn controller/effect and flame attachment handles used by Afterburn.",
+      "paramTypes": [
+        { "name": "entity", "type": "ptr64", "ref": false },
+        { "name": "className", "type": "string" },
+        { "name": "memberName", "type": "string" },
+        { "name": "element", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "OnClientDisconnect_Register",
+      "funcName": "OnClientDisconnect_Register",
+      "group": "Listeners",
+      "description": "Accepts the Rust plugin's disconnect listener in the no-client fixture.",
+      "paramTypes": [
+        { "name": "callback", "type": "function", "ref": false, "prototype": "OnClientDisconnectCallback" }
+      ],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "OnClientDisconnect_Unregister",
+      "funcName": "OnClientDisconnect_Unregister",
+      "group": "Listeners",
+      "description": "Accepts the Rust plugin's disconnect listener removal in the no-client fixture.",
+      "paramTypes": [
+        { "name": "callback", "type": "function", "ref": false, "prototype": "OnClientDisconnectCallback" }
+      ],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "IsClientInGame",
+      "funcName": "IsClientInGame",
+      "group": "Clients",
+      "description": "Marks the single Afterburn fixture slot as connected.",
+      "paramTypes": [
+        { "name": "playerSlot", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "GetClientButtons",
+      "funcName": "GetClientButtons",
+      "group": "Clients",
+      "description": "Reports no pressed buttons in the standalone loader fixture.",
+      "paramTypes": [
+        { "name": "playerSlot", "type": "int32", "ref": false },
+        { "name": "buttonIndex", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "uint64" }
+    },
+    {
+      "name": "GetClientWeapons",
+      "funcName": "GetClientWeapons",
+      "group": "Clients",
+      "description": "Reports no weapons in the standalone loader fixture.",
+      "paramTypes": [
+        { "name": "playerSlot", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "int32[]" }
+    },
+    {
+      "name": "IsClientAlive",
+      "funcName": "IsClientAlive",
+      "group": "Clients",
+      "description": "Checks the legacy player-pawn handle while GetClientPawn uses the current-pawn handle.",
+      "paramTypes": [ { "name": "playerSlot", "type": "int32", "ref": false } ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "GetClientHealth",
+      "funcName": "GetClientHealth",
+      "group": "Clients",
+      "description": "Returns health from the current-pawn handle during the Afterburn fixture.",
+      "paramTypes": [ { "name": "playerSlot", "type": "int32", "ref": false } ],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "PlayerSlotToEntHandle",
+      "funcName": "PlayerSlotToEntHandle",
+      "group": "Clients",
+      "description": "Maps the fixture slot to its player controller handle.",
+      "paramTypes": [
+        { "name": "playerSlot", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "GetClientPawn",
+      "funcName": "GetClientPawn",
+      "group": "Clients",
+      "description": "Returns the current pawn from the fixture's active controller handle.",
+      "paramTypes": [
+        { "name": "playerSlot", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "ptr64" }
+    },
+    {
+      "name": "IsFakeClient",
+      "funcName": "IsFakeClient",
+      "group": "Clients",
+      "description": "The fixture has no fake clients.",
+      "paramTypes": [
+        { "name": "playerSlot", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "IsEntityPlayerPawn",
+      "funcName": "IsEntityPlayerPawn",
+      "group": "Entities",
+      "description": "Recognizes fixture pawn entities.",
+      "paramTypes": [
+        { "name": "entityHandle", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "IsEntityPlayerController",
+      "funcName": "IsEntityPlayerController",
+      "group": "Entities",
+      "description": "Recognizes the fixture player controller.",
+      "paramTypes": [
+        { "name": "entityHandle", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "IsValidEntHandle",
+      "funcName": "IsValidEntHandle",
+      "group": "Entities",
+      "description": "Checks whether a fixture handle resolves to a current entity.",
+      "paramTypes": [
+        { "name": "entityHandle", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "GetGameRules",
+      "funcName": "GetGameRules",
+      "group": "Gamerules",
+      "description": "Returns the fixture GameRules object used by the production Big Head manager.",
+      "paramTypes": [],
+      "retType": { "type": "ptr64" }
+    },
+    {
+      "name": "GetEntSchema2",
+      "funcName": "GetEntSchema2",
+      "group": "Schema",
+      "description": "Reads the fixture integer schema fields used by the production Big Head manager.",
+      "paramTypes": [
+        { "name": "entity", "type": "ptr64", "ref": false },
+        { "name": "className", "type": "string" },
+        { "name": "memberName", "type": "string" },
+        { "name": "element", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "int64" }
+    },
+    {
+      "name": "SetEntSchema2",
+      "funcName": "SetEntSchema2",
+      "group": "Schema",
+      "description": "Writes the fixture GameRules mutator mask for ownership tests.",
+      "paramTypes": [
+        { "name": "entity", "type": "ptr64", "ref": false },
+        { "name": "className", "type": "string" },
+        { "name": "memberName", "type": "string" },
+        { "name": "value", "type": "int64", "ref": false },
+        { "name": "changeState", "type": "bool", "ref": false },
+        { "name": "element", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "GetEntSchemaFloat2",
+      "funcName": "GetEntSchemaFloat2",
+      "group": "Schema",
+      "description": "Reads the fixture Pawn Big Head scale field.",
+      "paramTypes": [
+        { "name": "entity", "type": "ptr64", "ref": false },
+        { "name": "className", "type": "string" },
+        { "name": "memberName", "type": "string" },
+        { "name": "element", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "double" }
+    },
+    {
+      "name": "SetEntSchemaFloat2",
+      "funcName": "SetEntSchemaFloat2",
+      "group": "Schema",
+      "description": "Writes the fixture Pawn Big Head scale field.",
+      "paramTypes": [
+        { "name": "entity", "type": "ptr64", "ref": false },
+        { "name": "className", "type": "string" },
+        { "name": "memberName", "type": "string" },
+        { "name": "value", "type": "double", "ref": false },
+        { "name": "changeState", "type": "bool", "ref": false },
+        { "name": "element", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "OnMapEnd_Register",
+      "funcName": "OnMapEnd_Register",
+      "group": "Listeners",
+      "description": "Registers a fixture map-end callback.",
+      "paramTypes": [
+        { "name": "callback", "type": "function", "ref": false, "prototype": "OnMapEndCallback" }
+      ],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "OnMapEnd_Unregister",
+      "funcName": "OnMapEnd_Unregister",
+      "group": "Listeners",
+      "description": "Unregisters a fixture map-end callback.",
+      "paramTypes": [
+        { "name": "callback", "type": "function", "ref": false, "prototype": "OnMapEndCallback" }
+      ],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "GetEntityEyePosition",
+      "funcName": "GetEntityEyePosition",
+      "group": "Entities",
+      "description": "Returns a zero eye position and records the queried handle.",
+      "paramTypes": [
+        { "name": "entityHandle", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "vec3" }
+    },
+    {
+      "name": "GetEntityEyeAngles",
+      "funcName": "GetEntityEyeAngles",
+      "group": "Entities",
+      "description": "Returns zero eye angles and records the queried handle.",
+      "paramTypes": [
+        { "name": "entityHandle", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "vec3" }
+    },
+    {
+      "name": "NativeFixtureFireStandardGrenadeDetonate",
+      "funcName": "NativeFixtureFireStandardGrenadeDetonate",
+      "group": "Fixture",
+      "description": "Invokes the fake smoke or Molotov Detonate vtable entry to test natural entry claims.",
+      "paramTypes": [ { "name": "handle", "type": "int32", "ref": false } ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "NativeFixtureGrenadeDetonateCount",
+      "funcName": "NativeFixtureGrenadeDetonateCount",
+      "group": "Fixture",
+      "description": "Returns calls recorded by the fake native grenade Detonate implementation.",
+      "paramTypes": [ { "name": "handle", "type": "int32", "ref": false } ],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureReuseSmokeGrenadeHandle",
+      "funcName": "NativeFixtureReuseSmokeGrenadeHandle",
+      "group": "Fixture",
+      "description": "Reuses the same smoke entity object with a new serial-bearing full handle.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureFireTouch",
+      "funcName": "NativeFixtureFireTouch",
+      "group": "Fixture",
+      "description": "Invokes the fixture entity's current Touch vtable slot.",
+      "paramTypes": [],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "NativeFixtureTouchCallCount",
+      "funcName": "NativeFixtureTouchCallCount",
+      "group": "Fixture",
+      "description": "Returns calls which reached the original fixture Touch body.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureTouchChecksum",
+      "funcName": "NativeFixtureTouchChecksum",
+      "group": "Fixture",
+      "description": "Returns a second observable write from the original fixture Touch body.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureSetNavAvailable",
+      "funcName": "NativeFixtureSetNavAvailable",
+      "group": "Fixture",
+      "description": "Temporarily hides or restores the fixture nav-trace vtable entry for capability-prerequisite checks.",
+      "paramTypes": [
+        { "name": "available", "type": "bool", "ref": false }
+      ],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "NativeFixtureNavTraceCallCount",
+      "funcName": "NativeFixtureNavTraceCallCount",
+      "group": "Fixture",
+      "description": "Returns calls dispatched through the production native nav interface reference.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureLastEyePositionHandle",
+      "funcName": "NativeFixtureLastEyePositionHandle",
+      "group": "Fixture",
+      "description": "Returns the handle used for the last eye-position query.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureLastEyeAngleHandle",
+      "funcName": "NativeFixtureLastEyeAngleHandle",
+      "group": "Fixture",
+      "description": "Returns the handle used for the last eye-angle query.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureDamageConstructorCallCount",
+      "funcName": "NativeFixtureDamageConstructorCallCount",
+      "group": "Fixture",
+      "description": "Returns constructor calls for the production native ApplyDamage path.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureTakeDamageCallCount",
+      "funcName": "NativeFixtureTakeDamageCallCount",
+      "group": "Fixture",
+      "description": "Returns calls that reached the original fixture damage target.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureOuterDamageType",
+      "funcName": "NativeFixtureOuterDamageType",
+      "group": "Fixture",
+      "description": "Returns the outer slash damage type after the production callback ran.",
+      "paramTypes": [],
+      "retType": { "type": "uint32" }
+    },
+    {
+      "name": "NativeFixtureOuterDamageHitGroup",
+      "funcName": "NativeFixtureOuterDamageHitGroup",
+      "group": "Fixture",
+      "description": "Returns the hit group written by the production damage hook.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureOuterDamageAbility",
+      "funcName": "NativeFixtureOuterDamageAbility",
+      "group": "Fixture",
+      "description": "Returns the exact ability handle passed to the original damage target.",
+      "paramTypes": [],
+      "retType": { "type": "uint32" }
+    },
+    {
+      "name": "NativeFixtureOuterDamageAmount",
+      "funcName": "NativeFixtureOuterDamageAmount",
+      "group": "Fixture",
+      "description": "Returns the scaled amount passed to the original damage target.",
+      "paramTypes": [],
+      "retType": { "type": "float" }
+    },
+    {
+      "name": "NativeFixtureCollisionGroup",
+      "funcName": "NativeFixtureCollisionGroup",
+      "group": "Fixture",
+      "description": "Returns the fixture collision group's top-level byte.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureCollisionAttributeGroup",
+      "funcName": "NativeFixtureCollisionAttributeGroup",
+      "group": "Fixture",
+      "description": "Returns the collision attribute's collision-group byte.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureCollisionRulesChangedCount",
+      "funcName": "NativeFixtureCollisionRulesChangedCount",
+      "group": "Fixture",
+      "description": "Returns calls to the fixture CollisionRulesChanged method.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureSetCollisionState",
+      "funcName": "NativeFixtureSetCollisionState",
+      "group": "Fixture",
+      "description": "Controls the fixture collision field availability and values for the native collision schema cache regression.",
+      "paramTypes": [
+        { "name": "collisionGroupFieldAvailable", "type": "bool" },
+        { "name": "collisionGroup", "type": "int32" },
+        { "name": "attributeGroup", "type": "int32" }
+      ],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "NativeFixtureSchemaClassLookupCount",
+      "funcName": "NativeFixtureSchemaClassLookupCount",
+      "group": "Fixture",
+      "description": "Counts successful schema class metadata lookups used to verify failed collision resolution retries and successful cache reuse.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureBigHeadResetCallCount",
+      "funcName": "NativeFixtureBigHeadResetCallCount",
+      "group": "Fixture",
+      "description": "Returns how many times the original production Big Head reset target executed.",
+      "paramTypes": [],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "NativeFixtureFailMutatorWrites",
+      "funcName": "NativeFixtureFailMutatorWrites",
+      "group": "Fixture",
+      "description": "Controls whether fixture writes to the GameRules mutator field are ignored.",
+      "paramTypes": [{ "name": "fail", "type": "bool" }],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "NativeFixtureFireMapEnd",
+      "funcName": "NativeFixtureFireMapEnd",
+      "group": "Fixture",
+      "description": "Dispatches the fixture's registered map-end callbacks.",
+      "paramTypes": [],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "NativeFixtureEnableAfterburnClient",
+      "funcName": "NativeFixtureEnableAfterburnClient",
+      "group": "Fixture",
+      "description": "Enables the one-client pawn-identity view during the Afterburn regression only.",
+      "paramTypes": [{ "name": "enabled", "type": "bool" }],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "RemoveEntity",
+      "funcName": "RemoveEntity",
+      "group": "Entities",
+      "description": "Removes one fixture flame by exact entity handle.",
+      "paramTypes": [{ "name": "entityHandle", "type": "int32" }],
+      "retType": { "type": "void" }
+    }
+  ],
+  "prototypes": [
+    {
+      "name": "ConCommandCallback",
+      "funcName": "ConCommandCallback",
+      "description": "Fixture command callback type.",
+      "paramTypes": [
+        { "name": "caller", "type": "int32" },
+        { "name": "context", "type": "int32" },
+        { "name": "arguments", "type": "string[]" }
+      ],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "EventCallback",
+      "funcName": "EventCallback",
+      "description": "Fixture game event callback.",
+      "paramTypes": [
+        { "name": "eventName", "type": "string" },
+        { "name": "event", "type": "ptr64" },
+        { "name": "dontBroadcast", "type": "bool" }
+      ],
+      "retType": { "type": "int32" }
+    },
+    {
+      "name": "OnClientDisconnectCallback",
+      "funcName": "OnClientDisconnectCallback",
+      "description": "Called when a client disconnects from the empty fixture server.",
+      "paramTypes": [
+        { "name": "playerSlot", "type": "int32" },
+        { "name": "reason", "type": "int32" }
+      ],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "OnMapEndCallback",
+      "funcName": "OnMapEndCallback",
+      "description": "Called by the fixture for map-end cleanup.",
+      "paramTypes": [],
+      "retType": { "type": "void" }
+    }
+  ]
+}

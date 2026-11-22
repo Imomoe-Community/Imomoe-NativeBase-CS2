@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify-plugin-s2sdk/refs/tags/v3.0.0/assets/gamedata.schema.json",
+  "csgo": {
+    "Signatures": {
+      "CCSBot::IsVisiblePlayer": {
+        "library": "server",
+        "win64": "48 89 5C 24 ? 44 88 44 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8D 05",
+        "linuxsteamrt64": "55 48 8D 05 ? ? ? ? 48 89 E5 41 57 4C 8D 7D ? 41 56 41 89 D6"
+      }
+    }
+  }
+}

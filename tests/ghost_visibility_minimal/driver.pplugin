@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/v3.1.0/schemas/plugin.schema.json",
+  "version": "0.1.0",
+  "name": "ghost_visibility_minimal",
+  "description": "Isolated CS2 BOT target-visibility gate diagnostic; never distribute with gameplay.",
+  "author": "FunRounds native tests",
+  "website": "https://github.com/Mai-Ooizumi/Imomoe-FunRounds-CS2",
+  "license": "AGPL-3.0-or-later",
+  "entry": "bin/ghost-visibility-minimal",
+  "platforms": [],
+  "language": "cpp",
+  "dependencies": [
+    { "name": "s2sdk", "constraints": "=3.4.3" },
+    { "name": "polyhook", "constraints": ">=2.5.7" }
+  ],
+  "methods": []
+}

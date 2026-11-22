@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/v3.1.0/schemas/plugin.schema.json",
+  "version": "0.1.0",
+  "name": "imomoe_native_base_test_driver",
+  "description": "Exercises production imomoe-native-base standard-grenade, Big Head, Touch, and damage APIs in a standalone Plugify host.",
+  "author": "FunRounds native tests",
+  "website": "https://github.com/Mai-Ooizumi/Imomoe-FunRounds-CS2",
+  "license": "AGPL-3.0-or-later",
+  "entry": "bin/imomoe-native-base-test-driver",
+  "platforms": [],
+  "language": "cpp",
+  "dependencies": [
+    { "name": "imomoe_native_base", "constraints": "0.1.0" },
+    { "name": "s2sdk", "constraints": "=3.4.3" },
+    { "name": "polyhook", "constraints": "=2.5.7" }
+  ],
+  "methods": []
+}

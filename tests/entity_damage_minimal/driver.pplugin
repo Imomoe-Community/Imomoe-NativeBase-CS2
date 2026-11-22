@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/v3.1.0/schemas/plugin.schema.json",
+  "version": "0.1.0",
+  "name": "entity_damage_minimal",
+  "description": "Test-only owned-chicken damage observer and suppressor for the native entity damage seam.",
+  "author": "FunRounds native tests",
+  "website": "https://github.com/Mai-Ooizumi/Imomoe-FunRounds-CS2",
+  "license": "AGPL-3.0-or-later",
+  "entry": "bin/entity-damage-minimal",
+  "platforms": [],
+  "language": "cpp",
+  "dependencies": [
+    { "name": "imomoe_native_base", "constraints": "0.1.0" },
+    { "name": "s2sdk", "constraints": "=3.4.3" }
+  ],
+  "methods": []
+}

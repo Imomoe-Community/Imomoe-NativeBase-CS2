@@ -1,0 +1,35 @@
+# Build, temporary, and packaging artifacts
+/.work/
+/build/
+/dist/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Editor and IDE directories
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.swp
+*.swo
+*~
+
+# Operating system artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and crash dumps
+*.log
+*.dmp
+*.mdmp
+*.core
+
+# Sensitive runtime configurations and secrets
+/.env
+/.env.*
+!/.env.example

@@ -1,0 +1,55 @@
+name: NativeBase Release checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            platform: windows-x64
+            generator: plugify-gen.exe
+          - runner: ubuntu-latest
+            platform: linux-x64
+            generator: plugify-gen
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: 1.27.4
+      - name: Install fixed binding generator
+        shell: pwsh
+        run: |
+          $env:GOBIN = Join-Path $PWD '.work/tools'
+          go install '-ldflags=-s -w -X main.version=v1.2.15' github.com/untrustedmodders/plugify-gen/cmd/plugify-gen@v1.2.15
+      - name: Check gamedata
+        run: python scripts/validate-native-gamedata.py
+      - name: Build NativeBase and verify CTest
+        shell: pwsh
+        run: |
+          $image = @()
+          if ($IsLinux) {
+            $image = @('--container-image', 'registry.gitlab.steamos.cloud/steamrt/sniper/sdk@sha256:bb30053d3cd19d35c76ae69b2790dbaa1430448006f8240cb6d7e723f2d1940e')
+          }
+          python -u scripts/build-sdk.py --generator ".work/tools/${{ matrix.generator }}" --work-dir .work/ci --dist dist @image
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: imomoe-native-base-${{ matrix.platform }}
+          path: dist/imomoe-native-base-0.1.0-${{ matrix.platform }}.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: s2sdk-fork-e2b88d3-${{ matrix.platform }}
+          path: dist/s2sdk-fork-3.4.3-e2b88d3-${{ matrix.platform }}.zip
+          if-no-files-found: error
