@@ -33,7 +33,7 @@
 | :--- | :--- |
 | **客户端标识**<br><sub><sup>`Clients`</sup></sub> | `GetClientUserID`：查询在线玩家真实引擎 userid，供 `Imomoe-Admin` 等消费插件使用。<br><sub><sup>`GetClientUserID`: resolves the live engine userid for `Imomoe-Admin` and companion consumers.</sup></sub> |
 | **伤害、碰撞与实体**<br><sub><sup>`Damage`, `Entities`</sup></sub> | 玩家与非玩家伤害拦截/改写、直接近战/枪械命中部位与来源方位、实体伤害注入、`Touch` 拦截及标准碰撞组重置。<br><sub><sup>Player/entity `TakeDamage` hooks, direct knife/firearm contact and bearing inspection, `Touch` pre-hooks, and collision group reset.</sup></sub> |
-| **回合与武器投掷物**<br><sub><sup>`RoundScore`, `C4Access`, `MolotovRain`, `Grenades`, `ReloadSync`, `WorldItems`, `RandomSpawn`, `Afterburn`, `Suicide`, `Healthshot`</sup></sub> | 原生回合结算、C4 安放/拆弹控制、燃烧瓶雨与自伤隔离、全投掷物引爆状态与滞留控制、换弹同步与满弹夹换弹、无主道具生成、死亡竞赛随机出生点、点燃、自爆拾取拦截与治疗针上限控制。<br><sub><sup>Native round win completion, C4 plant/defuse gating, Molotov rain, grenade detonation holds/duds, reload sync, world items, random spawns, ignite, suicide pickup gating, and healthshot caps.</sup></sub> |
+| **回合与武器投掷物**<br><sub><sup>`RoundScore`, `C4Access`, `MolotovRain`, `Grenades`, `ReloadSync`, `WorldItems`, `RandomSpawn`, `Afterburn`, `Suicide`, `Healthshot`</sup></sub> | 原生回合结算、C4 安放/拆弹控制、原生 HE／烟雾／燃烧瓶弹体工厂、火雨自伤隔离、全投掷物引爆状态与滞留控制、换弹同步与满弹夹换弹、无主道具生成、死亡竞赛随机出生点、点燃、自爆拾取拦截与治疗针上限控制。<br><sub><sup>Native round win completion, C4 plant/defuse gating, native HE/smoke/Molotov projectile creation, rain self-damage filtering, grenade detonation holds/duds, reload sync, world items, random spawns, ignite, suicide pickup gating, and healthshot caps.</sup></sub> |
 | **移动、隐身与表现**<br><sub><sup>`GhostVisibility`, `GhostRadar`, `PoseGraph`, `PoseMove`, `PlayerFreeze`, `AirMove`, `GroundReverse`, `WallHang`, `ThirdPerson`, `BigHead`, `ChickenEating`, `ChickenFollow`, `TargetAttack`, `Chrono`, `RecoilImpulse`</sup></sub> | BOT 视野/雷达/被动脚步声隔离、AnimGraph2 姿态、冻结移动/自动连跳/空中辅助/反向地面移动、碰撞盒扫掠、第三人称相机眼位、大头缩放、小鸡交互与跟随屏蔽、武器攻击/后坐力干预。<br><sub><sup>BOT visibility/radar/footstep filtering, AnimGraph2 poses, freeze/auto-jump/airmove/ground-reverse/hull tracing, third-person eye targets, big-head scaling, chicken interactions, and weapon/recoil hooks.</sup></sub> |
 
 ---
@@ -64,18 +64,18 @@ python3 scripts/build-sdk.py --generator PATH/plugify-gen --work-dir .work/linux
 
 | Actions Artifact | 内含安装压缩包 / <sub><sup>Install ZIP Inside</sup></sub> |
 | :--- | :--- |
-| `imomoe-native-base-<platform>` | `imomoe-native-base-0.1.0-<platform>.zip` |
+| `imomoe-native-base-<platform>` | `imomoe-native-base-0.2.0-<platform>.zip` |
 | `s2sdk-fork-e2b88d3-<platform>` | `s2sdk-fork-3.4.3-e2b88d3-<platform>.zip` |
 
 > [!NOTE]
-> `FunRounds` 与 `Imomoe-Admin` 的打包 CI 会将本仓库 `v0.1.0` Release 下的 4 份安装压缩包作为上游资产使用。工作流仅上传 Actions Artifact；将安装包发布至 Release 属于独立的受控操作。<br><sub><sup>Consumer packaging CI fetches the four install ZIPs from this repository's `v0.1.0` Release; publishing them from Actions artifacts to a Release is a separate approved step.</sup></sub>
+> FunRounds 的新火雨和枪榴弹需要配套的 NativeBase 0.2.0；本地开发使用本仓构建的独立包，已发布的 v0.1.0 保留供旧消费者使用。
 
 ---
 
 ### 安装与回退 / Installation & Rollback
 
 1. 按服务端平台准备两个安装压缩包 / Obtain both ZIPs for your platform:
-   - `imomoe-native-base-0.1.0-<platform>.zip`：仅包含 `envs/imomoe_native_base/`。
+   - `imomoe-native-base-0.2.0-<platform>.zip`：仅包含 `envs/imomoe_native_base/`。
    - `s2sdk-fork-3.4.3-e2b88d3-<platform>.zip`：仅包含 `envs/plugify-plugin-s2sdk/`（内含 `s2sdk-fork.json` 标识 fork 与 SourceSDK 提交）。
 
 2. 首次安装前，请先准备基础运行时，再仅从每个压缩包中复制 `game/` 目录：<br>

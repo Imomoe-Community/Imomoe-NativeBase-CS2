@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/refs/tags/v3.1.0/schemas/plugin.schema.json",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": "imomoe_native_base",
   "description": "Shared Source 2 engine bridges for Imomoe plugins",
   "author": "Mai Ooizumi",
@@ -156,13 +156,17 @@
       }
     },
     {
-      "name": "CanCreateMolotovRain",
-      "funcName": "CanCreateMolotovRain",
-      "group": "MolotovRain",
-      "description": "Resolves the game-thread Molotov factory and, when requested, exact rain inferno lineage support.",
+      "name": "CanCreateGrenadeProjectile",
+      "funcName": "CanCreateGrenadeProjectile",
+      "group": "Grenades",
+      "description": "Checks one projectile factory: smoke (1), Molotov (2), or HE (4). The optional rain policy also requires exact inferno lineage.",
       "paramTypes": [
         {
-          "name": "requireForceSelfDamage",
+          "name": "kind",
+          "type": "int32"
+        },
+        {
+          "name": "forceRainSelfDamage",
           "type": "bool"
         }
       ],
@@ -171,13 +175,22 @@
       }
     },
     {
-      "name": "CreateMolotovRainProjectile",
-      "funcName": "CreateMolotovRainProjectile",
-      "group": "MolotovRain",
-      "description": "Creates a naturally falling Molotov with either an exact pawn thrower or world attribution (-1). Returns the complete handle, or -1.",
+      "name": "CreateGrenadeProjectile",
+      "funcName": "CreateGrenadeProjectile",
+      "group": "Grenades",
+      "description": "Spawns a native projectile on the game thread. Velocity is in units per second. Thrower is a complete pawn handle, or -1 for world-attributed Molotov. Rain self-damage is opt-in for pawn-attributed Molotov only. Returns a complete entity handle or -1.",
       "paramTypes": [
         {
+          "name": "kind",
+          "type": "int32"
+        },
+        {
           "name": "position",
+          "type": "vec3",
+          "ref": false
+        },
+        {
+          "name": "velocity",
           "type": "vec3",
           "ref": false
         },
@@ -186,7 +199,7 @@
           "type": "int32"
         },
         {
-          "name": "forceSelfDamage",
+          "name": "forceRainSelfDamage",
           "type": "bool"
         }
       ],

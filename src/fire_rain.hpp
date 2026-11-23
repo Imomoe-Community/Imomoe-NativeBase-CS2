@@ -5,14 +5,12 @@
 
 #include <cstdint>
 
-#include <plg/plugin.hpp>
 
 namespace funrounds::native::detail {
 
-bool CanCreateMolotovRain(bool requireForceSelfDamage) noexcept;
-std::int32_t CreateMolotovRainProjectile(const plg::vec3& position,
-                                        std::int32_t throwerPawn,
-                                        bool forceSelfDamage) noexcept;
+bool MolotovRainSelfDamageAvailable() noexcept;
+bool PrepareMolotovRainSelfDamage() noexcept;
+bool TrackMolotovRainSelfDamage(std::int32_t projectile, std::int32_t thrower) noexcept;
 bool ShouldBypassSelfDamageForRain(std::int32_t inflictorHandle,
                                    std::int32_t victimPawnHandle) noexcept;
 void ClearMolotovRainTracking() noexcept;

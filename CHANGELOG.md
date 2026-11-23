@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0]
+
+- Replace the Molotov rain factory with `CreateGrenadeProjectile` and per-kind `CanCreateGrenadeProjectile` for native Molotov, HE and smoke. Consumers must move to the new ABI together with the provider.
+- Keep the rain-only self-damage policy opt-in, using the existing exact inferno lineage.
+
 ## [0.1.0] - 2026-11-22
 
 ### 简体中文

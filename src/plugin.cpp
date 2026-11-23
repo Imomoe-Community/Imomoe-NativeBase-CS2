@@ -14,6 +14,7 @@
 #include "damage.hpp"
 #include "engine.hpp"
 #include "fire_rain.hpp"
+#include "grenade_factory.hpp"
 #include "bighead.hpp"
 #include "ghost_radar.hpp"
 #include "ghost_visibility.hpp"
@@ -96,6 +97,7 @@ public:
             const bool suicideClean = funrounds::native::detail::ShutdownSuicide();
             const bool recoilImpulseClean = funrounds::native::detail::ShutdownRecoilImpulse();
             const bool reloadSyncClean = funrounds::native::detail::ShutdownReloadSync();
+            funrounds::native::detail::ResetGrenadeFactories();
             const bool fireRainClean = funrounds::native::detail::ShutdownMolotovRain();
             const bool standardGrenadesClean = funrounds::native::detail::ShutdownStandardGrenades();
             const bool touchClean = funrounds::native::detail::ShutdownTouch();

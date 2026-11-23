@@ -16,7 +16,7 @@ from package import package
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "runtime/s2sdk.json"
-NATIVE_VERSION = "0.1.0"
+NATIVE_VERSION = json.loads((ROOT / "imomoe_native_base.pplugin").read_bytes())["version"]
 EXPECTED_SDK_TESTS = (
     "convar_lifecycle_tests",
     "s2sdk-event-manager-lifecycle-selfcheck",

@@ -30,7 +30,7 @@
 | :--- | :--- |
 | `Clients` | `GetClientUserID`: resolves the current engine userid for `Imomoe-Admin` and other consumers. |
 | `Damage`, `Entities` | Player and non-player `TakeDamage` hooks, direct knife/firearm hitbox and source-bearing inspection, `TakeEntityDamageWithWeapon`, `Touch` pre-hooks, and collision group reset. |
-| `RoundScore`, `C4Access`, `MolotovRain`, `Grenades`, `ReloadSync`, `WorldItems`, `RandomSpawn`, `Afterburn`, `Suicide`, `Healthshot` | Native team round completion, C4 plant/defuse gating, Molotov rain and self-damage filtering, grenade detonation state/holds/duds, reload sync & full-magazine reload, ownerless world items, random deathmatch spawns, player ignition, suicide pickup gating, and healthshot caps. |
+| `RoundScore`, `C4Access`, `MolotovRain`, `Grenades`, `ReloadSync`, `WorldItems`, `RandomSpawn`, `Afterburn`, `Suicide`, `Healthshot` | Native team round completion, C4 plant/defuse gating, native HE/smoke/Molotov projectile creation, rain self-damage filtering, grenade detonation state/holds/duds, reload sync & full-magazine reload, ownerless world items, random deathmatch spawns, player ignition, suicide pickup gating, and healthshot caps. |
 | `GhostVisibility`, `GhostRadar`, `PoseGraph`, `PoseMove`, `PlayerFreeze`, `AirMove`, `GroundReverse`, `WallHang`, `ThirdPerson`, `BigHead`, `ChickenEating`, `ChickenFollow`, `TargetAttack`, `Chrono`, `RecoilImpulse` | BOT visibility/radar/footstep filtering, AnimGraph2 pose graph actions, movement freeze/auto-jump/airmove/ground-reverse/hull tracing, third-person camera eye targets, big-head scaling, chicken use/follow gating, and weapon attack/recoil hooks. |
 
 ---
@@ -59,18 +59,18 @@ Pass `--resume-source` to reuse a clean checkout at both pins. On Linux it must 
 
 | Actions artifact | Install ZIP inside |
 | :--- | :--- |
-| `imomoe-native-base-<platform>` | `imomoe-native-base-0.1.0-<platform>.zip` |
+| `imomoe-native-base-<platform>` | `imomoe-native-base-0.2.0-<platform>.zip` |
 | `s2sdk-fork-e2b88d3-<platform>` | `s2sdk-fork-3.4.3-e2b88d3-<platform>.zip` |
 
 > [!NOTE]
-> FunRounds and Admin packaging CI consume the four **install ZIPs** as assets of this repository's `v0.1.0` Release. The workflow only uploads Actions artifacts. Supplying the install ZIPs to the Release is a separate, approved step.
+> Pair the new FunRounds grenade consumers with locally built NativeBase 0.2.0. The published v0.1.0 assets remain available to older consumers.
 
 ---
 
 ### Installation & Rollback
 
 1. Use the two files for your server's platform:
-   - `imomoe-native-base-0.1.0-<platform>.zip` installs `envs/imomoe_native_base/` only.
+   - `imomoe-native-base-0.2.0-<platform>.zip` installs `envs/imomoe_native_base/` only.
    - `s2sdk-fork-3.4.3-e2b88d3-<platform>.zip` installs `envs/plugify-plugin-s2sdk/` only. Its `s2sdk-fork.json` identifies the fork and SourceSDK commits.
 
 2. For a first installation, prepare:
