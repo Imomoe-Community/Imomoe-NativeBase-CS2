@@ -41,8 +41,8 @@
 
 ### 构建与 CI 产物 / Building & CI Outputs
 
-Windows 需要 Python 3.11+、`plugify-gen 1.2.15` 与 Visual Studio x64 / C++23（含 MASM）；Linux 使用 Docker 与下文固定的 Steam Runtime Sniper SDK（GCC 14.2）。构建脚本基于 [runtime/s2sdk.json](runtime/s2sdk.json) 中固定的 S2SDK `3.5.1@abc161b` 与 SourceSDK `e4e7260` 编译 SDK 与提供者、运行两套 CTest，并分别打包 NativeBase 与 S2SDK fork 安装包。<br>
-<sub><sup>Windows requires Python 3.11+, `plugify-gen 1.2.15`, and Visual Studio x64 / C++23 (with MASM); Linux uses Docker with the pinned Steam Runtime Sniper SDK (GCC 14.2). Driven by [runtime/s2sdk.json](runtime/s2sdk.json) (`S2SDK 3.5.1@abc161b`, `SourceSDK e4e7260`), the builder compiles both components, runs both CTest suites, and produces separate install ZIPs.</sup></sub>
+Windows 需要 Python 3.11+、`plugify-gen 1.2.15` 与 Visual Studio x64 / C++23（含 MASM）；Linux 使用 Docker 与下文固定的 Steam Runtime Sniper SDK（GCC 14.2）。构建脚本基于 [runtime/s2sdk.json](runtime/s2sdk.json) 中固定的 S2SDK `3.5.1@019e5b7` 与 SourceSDK `e4e7260` 编译 SDK 与提供者、运行两套 CTest，并分别打包 NativeBase 与 S2SDK fork 安装包。<br>
+<sub><sup>Windows requires Python 3.11+, `plugify-gen 1.2.15`, and Visual Studio x64 / C++23 (with MASM); Linux uses Docker with the pinned Steam Runtime Sniper SDK (GCC 14.2). Driven by [runtime/s2sdk.json](runtime/s2sdk.json) (`S2SDK 3.5.1@019e5b7`, `SourceSDK e4e7260`), the builder compiles both components, runs both CTest suites, and produces separate install ZIPs.</sup></sub>
 
 ```powershell
 # Windows (PowerShell)
@@ -66,7 +66,7 @@ python3 scripts/build-sdk.py --generator PATH/plugify-gen --work-dir .work/linux
 | Actions Artifact | 内含安装压缩包 / <sub><sup>Install ZIP Inside</sup></sub> |
 | :--- | :--- |
 | `imomoe-native-base-<platform>` | `imomoe-native-base-0.4.0-<platform>.zip` |
-| `s2sdk-fork-<platform>` | `s2sdk-fork-3.5.1-abc161b-<platform>.zip` |
+| `s2sdk-fork-<platform>` | `s2sdk-fork-3.5.1-019e5b7-<platform>.zip` |
 
 > [!NOTE]
 > S2SDK fork 的所有导出与官方 3.5.1 一致。fork 提交尚未公开；通过 `--resume-source` 指定本地配对源码，远端 CI 需等该提交可从配置的 fork 获取后才能构建。<br><sub><sup>The fork exposes the official S2SDK 3.5.1 ABI. Use `--resume-source` locally until hosted CI can fetch the pinned fork commit.</sup></sub>
@@ -77,7 +77,7 @@ python3 scripts/build-sdk.py --generator PATH/plugify-gen --work-dir .work/linux
 
 1. 按服务端平台准备两个安装压缩包 / Obtain both ZIPs for your platform:
    - `imomoe-native-base-0.4.0-<platform>.zip`：仅包含 `envs/imomoe_native_base/`。
-   - `s2sdk-fork-3.5.1-abc161b-<platform>.zip`：仅包含 `envs/plugify-plugin-s2sdk/`（内含 `s2sdk-fork.json` 标识 fork 与 SourceSDK 提交）。
+   - `s2sdk-fork-3.5.1-019e5b7-<platform>.zip`：仅包含 `envs/plugify-plugin-s2sdk/`（内含 `s2sdk-fork.json` 标识 fork 与 SourceSDK 提交）。
 
 2. 首次安装前，请先准备基础运行时，再仅从每个压缩包中复制 `game/` 目录：<br>
    <sub><sup>For a first installation, prepare the base runtime and copy only the `game/` tree from each ZIP:</sup></sub>

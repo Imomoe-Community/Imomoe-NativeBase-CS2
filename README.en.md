@@ -38,7 +38,7 @@
 
 ### Building & CI Outputs
 
-Use Python 3.11+, `plugify-gen 1.2.15`, and Visual Studio x64/C++23 (with MASM) on Windows. Linux uses Docker and the Steam Runtime Sniper SDK pinned below, with GCC 14.2. The builder uses S2SDK `3.5.1@abc161b` with SourceSDK `e4e7260`, as pinned in [`runtime/s2sdk.json`](runtime/s2sdk.json). It builds the SDK, compiles the provider, runs both CTest suites, and produces separate NativeBase and fork S2SDK ZIPs.
+Use Python 3.11+, `plugify-gen 1.2.15`, and Visual Studio x64/C++23 (with MASM) on Windows. Linux uses Docker and the Steam Runtime Sniper SDK pinned below, with GCC 14.2. The builder uses S2SDK `3.5.1@019e5b7` with SourceSDK `e4e7260`, as pinned in [`runtime/s2sdk.json`](runtime/s2sdk.json). It builds the SDK, compiles the provider, runs both CTest suites, and produces separate NativeBase and fork S2SDK ZIPs.
 
 ```powershell
 # Windows (PowerShell)
@@ -61,7 +61,7 @@ Pass `--resume-source` to reuse a clean checkout at both pins. Work directories 
 | Actions artifact | Install ZIP inside |
 | :--- | :--- |
 | `imomoe-native-base-<platform>` | `imomoe-native-base-0.4.0-<platform>.zip` |
-| `s2sdk-fork-<platform>` | `s2sdk-fork-3.5.1-abc161b-<platform>.zip` |
+| `s2sdk-fork-<platform>` | `s2sdk-fork-3.5.1-019e5b7-<platform>.zip` |
 
 > [!NOTE]
 > The fork exposes the official S2SDK 3.5.1 ABI. Use `--resume-source` locally until hosted CI can fetch the pinned fork commit.
@@ -72,7 +72,7 @@ Pass `--resume-source` to reuse a clean checkout at both pins. Work directories 
 
 1. Use the two files for your server's platform:
    - `imomoe-native-base-0.4.0-<platform>.zip` installs `envs/imomoe_native_base/` only.
-   - `s2sdk-fork-3.5.1-abc161b-<platform>.zip` installs `envs/plugify-plugin-s2sdk/` only. Its `s2sdk-fork.json` identifies the fork and SourceSDK commits.
+   - `s2sdk-fork-3.5.1-019e5b7-<platform>.zip` installs `envs/plugify-plugin-s2sdk/` only. Its `s2sdk-fork.json` identifies the fork and SourceSDK commits.
 
 2. For a first installation, prepare:
    - [S2-Launcher 2.5.8](https://github.com/untrustedmodders/plugify-source2-launcher/releases/tag/v2.5.8) / [Plugify](https://github.com/untrustedmodders/plugify)
