@@ -1,6 +1,6 @@
 {
   "version": "3.4.3",
   "repository": "https://github.com/Mai-Ooizumi/plugify-plugin-s2sdk.git",
-  "commit": "e2b88d3f1d94b367329ce40873aeffd6e0ff78ac",
-  "sourcesdk_commit": "92f04945eb7edbd03b63a8a7e1eb4b9832c0459c"
+  "commit": "a2c393c9369f84a9a0e1e2aef7006a766f01682f",
+  "sourcesdk_commit": "2c0641d3b3a462682ac6c03e8e2e15d34e029f31"
 }

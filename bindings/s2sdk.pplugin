@@ -29,6 +29,126 @@
   ],
   "methods": [
     {
+      "name": "EmitSound",
+      "group": "Engine",
+      "description": "Emits a sound from a specified entity.",
+      "funcName": "EmitSound",
+      "paramTypes": [
+        {
+          "name": "entityHandle",
+          "type": "int32",
+          "ref": false,
+          "description": "The handle of the entity that will emit the sound."
+        },
+        {
+          "name": "sound",
+          "type": "string",
+          "ref": false,
+          "description": "The name of the sound to emit."
+        },
+        {
+          "name": "pitch",
+          "type": "int32",
+          "ref": false,
+          "description": "The pitch of the sound."
+        },
+        {
+          "name": "volume",
+          "type": "float",
+          "ref": false,
+          "description": "The volume of the sound."
+        },
+        {
+          "name": "delay",
+          "type": "float",
+          "ref": false,
+          "description": "The delay before the sound is played."
+        }
+      ],
+      "retType": {
+        "type": "void"
+      }
+    },
+    {
+      "name": "PbGetInt32",
+      "group": "Protobuf",
+      "description": "Gets a 32-bit integer value from a field in the UserMessage.",
+      "funcName": "PbGetInt32",
+      "paramTypes": [
+        {
+          "name": "userMessage",
+          "type": "ptr64",
+          "ref": false,
+          "description": "The UserMessage instance."
+        },
+        {
+          "name": "fieldName",
+          "type": "string",
+          "ref": false,
+          "description": "The name of the field."
+        },
+        {
+          "name": "out",
+          "type": "int32",
+          "ref": true,
+          "description": "The output value."
+        }
+      ],
+      "retType": {
+        "type": "bool",
+        "description": "True if the field was successfully retrieved, false otherwise."
+      }
+    },
+    {
+      "name": "PbGetUInt32",
+      "group": "Protobuf",
+      "description": "Gets an unsigned 32-bit integer value from a field in the UserMessage.",
+      "funcName": "PbGetUInt32",
+      "paramTypes": [
+        {
+          "name": "userMessage",
+          "type": "ptr64",
+          "ref": false,
+          "description": "The UserMessage instance."
+        },
+        {
+          "name": "fieldName",
+          "type": "string",
+          "ref": false,
+          "description": "The name of the field."
+        },
+        {
+          "name": "out",
+          "type": "uint32",
+          "ref": true,
+          "description": "The output value."
+        }
+      ],
+      "retType": {
+        "type": "bool",
+        "description": "True if the field was successfully retrieved, false otherwise."
+      }
+    },
+    {
+      "name": "GetWeaponType",
+      "group": "Weapons",
+      "description": "Retrieves the weapon type of a given entity.",
+      "funcName": "GetWeaponType",
+      "paramTypes": [
+        {
+          "name": "entityHandle",
+          "type": "int32",
+          "ref": false,
+          "description": "The handle of the entity (weapon)."
+        }
+      ],
+      "retType": {
+        "type": "uint32",
+        "description": "The type of the weapon, or WEAPONTYPE_UNKNOWN if the entity is invalid.",
+        "enum": "CSWeaponType"
+      }
+    },
+    {
       "name": "IsClientConnected",
       "group": "Clients",
       "description": "Checks if a certain player is connected.",
@@ -4150,6 +4270,24 @@
         "type": "void",
         "description": "A color value at the given schema offset."
       }
+    },
+    {
+      "name": "UserMessageGetRecipientMask",
+      "group": "Protobuf",
+      "description": "Gets the recipient mask for the UserMessage.",
+      "funcName": "UserMessageGetRecipientMask",
+      "paramTypes": [
+        {
+          "name": "userMessage",
+          "type": "ptr64",
+          "ref": false,
+          "description": "The UserMessage instance."
+        }
+      ],
+      "retType": {
+        "type": "uint64",
+        "description": "The recipient mask."
+      }
     }
   ],
   "classes": [],
@@ -4303,6 +4441,64 @@
     }
   ],
   "enums": [
+    {
+      "name": "CSWeaponType",
+      "description": "Enum representing different weapon types.",
+      "values": [
+        {
+          "value": 0,
+          "name": "Knife"
+        },
+        {
+          "value": 1,
+          "name": "Pistol"
+        },
+        {
+          "value": 2,
+          "name": "SubmachineGun"
+        },
+        {
+          "value": 3,
+          "name": "Rifle"
+        },
+        {
+          "value": 4,
+          "name": "Shotgun"
+        },
+        {
+          "value": 5,
+          "name": "SniperRifle"
+        },
+        {
+          "value": 6,
+          "name": "MachineGun"
+        },
+        {
+          "value": 7,
+          "name": "C4"
+        },
+        {
+          "value": 8,
+          "name": "Taser"
+        },
+        {
+          "value": 9,
+          "name": "Grenade"
+        },
+        {
+          "value": 10,
+          "name": "Equipment"
+        },
+        {
+          "value": 11,
+          "name": "StackableItem"
+        },
+        {
+          "value": 12,
+          "name": "Unknown"
+        }
+      ]
+    },
     {
       "name": "ConVarFlag",
       "description": "Enum representing various flags for ConVars and ConCommands.",

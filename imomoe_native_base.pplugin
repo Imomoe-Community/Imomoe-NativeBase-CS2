@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/refs/tags/v3.1.0/schemas/plugin.schema.json",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "name": "imomoe_native_base",
   "description": "Shared Source 2 engine bridges for Imomoe plugins",
   "author": "Mai Ooizumi",
@@ -20,6 +20,71 @@
     }
   ],
   "methods": [
+    {
+      "name": "SnapPlayerViewAngles",
+      "funcName": "SnapPlayerViewAngles",
+      "group": "Clients",
+      "description": "On the game thread, sends the native view-angle change to one complete player pawn handle. True means the native call was issued, not that the client has displayed it.",
+      "paramTypes": [
+        { "name": "pawnHandle", "type": "int32", "ref": false },
+        { "name": "viewAngles", "type": "vec3", "ref": false }
+      ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "SetNativeWeaponCommandCallback",
+      "group": "Weapons",
+      "description": "Registers one game-thread callback at the end of native player command simulation, while the matching controller command remains installed.",
+      "funcName": "SetNativeWeaponCommandCallback",
+      "paramTypes": [
+        {
+          "name": "enabled",
+          "type": "bool"
+        },
+        {
+          "name": "callback",
+          "type": "function",
+          "prototype": "NativeWeaponCommandCallback",
+          "ref": false
+        }
+      ],
+      "retType": {
+        "type": "bool"
+      }
+    },
+    {
+      "name": "HasNativeWeaponShotSupport",
+      "group": "Weapons",
+      "description": "Whether the shared native stock-weapon firing path is available.",
+      "funcName": "HasNativeWeaponShotSupport",
+      "paramTypes": [],
+      "retType": {
+        "type": "bool"
+      }
+    },
+    {
+      "name": "FireNativeWeaponShot",
+      "group": "Weapons",
+      "description": "Issues one native shot from a live player using a stock hitscan weapon profile without equipping it. Only valid within that pawn's native weapon command callback. True means the temporary source spent a cartridge.",
+      "funcName": "FireNativeWeaponShot",
+      "paramTypes": [
+        {
+          "name": "shooterPawn",
+          "type": "int32",
+          "ref": false,
+          "description": "Complete handle of the live firing pawn."
+        },
+        {
+          "name": "weaponDefinition",
+          "type": "uint16",
+          "ref": false,
+          "description": "Stock economy item definition selected by the caller."
+        }
+      ],
+      "retType": {
+        "type": "bool"
+      }
+    },
     {
       "name": "GetClientUserID",
       "group": "Clients",
@@ -942,6 +1007,23 @@
     }
   ],
   "prototypes": [
+    {
+      "name": "NativeWeaponCommandCallback",
+      "funcName": "NativeWeaponCommandCallback",
+      "paramTypes": [
+        {
+          "name": "slot",
+          "type": "int32"
+        },
+        {
+          "name": "pawn",
+          "type": "int32"
+        }
+      ],
+      "retType": {
+        "type": "void"
+      }
+    },
     {
       "name": "TargetAttackCallback",
       "funcName": "TargetAttackCallback",

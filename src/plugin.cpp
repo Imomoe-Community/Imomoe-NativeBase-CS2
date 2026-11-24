@@ -91,6 +91,7 @@ public:
         try {
             const bool damageClean = funrounds::native::detail::ShutdownDamage();
             const bool attackClean = funrounds::native::detail::ShutdownTargetAttack();
+            const bool commandClean = funrounds::native::detail::ShutdownNativeWeaponCommand();
             const bool chronoClean = funrounds::native::detail::ShutdownChronoAttack();
             const bool c4Clean = funrounds::native::detail::ShutdownC4Access();
             const bool bigHeadClean = funrounds::native::detail::ShutdownBigHead();
@@ -109,21 +110,21 @@ public:
             const bool ghostVisibilityClean = funrounds::native::detail::ShutdownGhostVisibility();
             const bool interactionsClean = funrounds::native::detail::ShutdownInteractions();
             const bool thirdPersonClean = funrounds::native::detail::ShutdownThirdPersonEye();
+            const bool worldItemClean = funrounds::native::detail::ShutdownWorldItem();
 #if defined(FUNROUNDS_NATIVE_LIFECYCLE_PROBE)
             const bool probeClean = funrounds::native::detail::StopLifecycleProbe();
 #else
             constexpr bool probeClean = true;
 #endif
-            if (!damageClean || !attackClean || !chronoClean || !c4Clean || !bigHeadClean || !suicideClean || !recoilImpulseClean || !reloadSyncClean || !fireRainClean || !standardGrenadesClean || !touchClean || !airMoveClean || !groundReverseClean || !ghostRadarClean ||
+            if (!damageClean || !attackClean || !commandClean || !chronoClean || !c4Clean || !bigHeadClean || !suicideClean || !recoilImpulseClean || !reloadSyncClean || !fireRainClean || !standardGrenadesClean || !touchClean || !airMoveClean || !groundReverseClean || !ghostRadarClean ||
                 !ghostVisibilityClean || !poseMoveClean || !playerPoliciesClean ||
-                !interactionsClean || !thirdPersonClean || !probeClean) {
+                !interactionsClean || !thirdPersonClean || !worldItemClean || !probeClean) {
                 return plg::PluginResult{"Native hook cleanup could not be verified"};
             }
             funrounds::native::detail::ResetBurnMetadata();
             funrounds::native::detail::ResetRecoilImpulseMetadata();
             funrounds::native::detail::ResetCollisionSchema();
             funrounds::native::detail::ResetMovementTraceMetadata();
-            funrounds::native::detail::ResetWorldItemMetadata();
             funrounds::native::detail::ShutdownEngine();
             return {};
         } catch (...) {

@@ -11,6 +11,17 @@
 
 namespace funrounds::native::detail {
 void ResetMovementTraceMetadata() noexcept;
+
+struct WorldShotContact {
+    Vector position;
+    Vector start;
+    Vector normal;
+    std::uint32_t surface;
+    std::int32_t entity;
+};
+
+bool TraceWorldShotContact(std::int32_t shooter, const Vector& muzzle, const Vector& position,
+                           WorldShotContact& contact) noexcept;
 }
 
 // Both methods are game-thread-only. The query accepts a complete player pawn

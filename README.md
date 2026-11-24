@@ -26,12 +26,13 @@
 
 ### 导出能力概览 / Exported Capabilities
 
-在 [imomoe_native_base.pplugin](imomoe_native_base.pplugin) 中共声明 **88 个导出方法**与 **13 个回调原型**，覆盖以下能力域：<br>
-<sub><sup>Declares **88 exported methods** across 28 groups and **13 callback prototypes** in [imomoe_native_base.pplugin](imomoe_native_base.pplugin):</sup></sub>
+在 [imomoe_native_base.pplugin](imomoe_native_base.pplugin) 中共声明 **92 个导出方法**与 **14 个回调原型**，覆盖以下能力域：<br>
+<sub><sup>Declares **92 exported methods** across 29 groups and **14 callback prototypes** in [imomoe_native_base.pplugin](imomoe_native_base.pplugin):</sup></sub>
 
 | 能力域 / <sub><sup>Groups</sup></sub> | 涵盖接口与用途 / <sub><sup>Capabilities & Scope</sup></sub> |
 | :--- | :--- |
-| **客户端标识**<br><sub><sup>`Clients`</sup></sub> | `GetClientUserID`：查询在线玩家真实引擎 userid，供 `Imomoe-Admin` 等消费插件使用。<br><sub><sup>`GetClientUserID`: resolves the live engine userid for `Imomoe-Admin` and companion consumers.</sup></sub> |
+| **客户端标识**<br><sub><sup>`Clients`</sup></sub> | `GetClientUserID` 查询真实引擎 userid；`SnapPlayerViewAngles` 对单个完整 Pawn 句柄发出原生视角更新。<br><sub><sup>`GetClientUserID` resolves engine user IDs; `SnapPlayerViewAngles` issues a native view-angle update for one complete pawn handle.</sup></sub> |
+| **原生实弹**<br><sub><sup>`Weapons`</sup></sub> | 通过 `SetNativeWeaponCommandCallback` 注册回调，在对应 Pawn 的命令窗口内调用 `FireNativeWeaponShot`，按所选原版枪械配置打出一发实弹，不装备临时弹源。<br><sub><sup>Fire a stock-profile hitscan shot inside the matching pawn's registered weapon command callback, without equipping the temporary source.</sup></sub> |
 | **伤害、碰撞与实体**<br><sub><sup>`Damage`, `Entities`</sup></sub> | 玩家与非玩家伤害拦截/改写、直接近战/枪械命中部位与来源方位、实体伤害注入、`Touch` 拦截及标准碰撞组重置。<br><sub><sup>Player/entity `TakeDamage` hooks, direct knife/firearm contact and bearing inspection, `Touch` pre-hooks, and collision group reset.</sup></sub> |
 | **回合与武器投掷物**<br><sub><sup>`RoundScore`, `C4Access`, `MolotovRain`, `Grenades`, `ReloadSync`, `WorldItems`, `RandomSpawn`, `Afterburn`, `Suicide`, `Healthshot`</sup></sub> | 原生回合结算、C4 安放/拆弹控制、原生 HE／烟雾／燃烧瓶弹体工厂、火雨自伤隔离、全投掷物引爆状态与滞留控制、换弹同步与满弹夹换弹、无主道具生成、死亡竞赛随机出生点、点燃、自爆拾取拦截与治疗针上限控制。<br><sub><sup>Native round win completion, C4 plant/defuse gating, native HE/smoke/Molotov projectile creation, rain self-damage filtering, grenade detonation holds/duds, reload sync, world items, random spawns, ignite, suicide pickup gating, and healthshot caps.</sup></sub> |
 | **移动、隐身与表现**<br><sub><sup>`GhostVisibility`, `GhostRadar`, `PoseGraph`, `PoseMove`, `PlayerFreeze`, `AirMove`, `GroundReverse`, `WallHang`, `ThirdPerson`, `BigHead`, `ChickenEating`, `ChickenFollow`, `TargetAttack`, `Chrono`, `RecoilImpulse`</sup></sub> | BOT 视野/雷达/被动脚步声隔离、AnimGraph2 姿态、冻结移动/自动连跳/空中辅助/反向地面移动、碰撞盒扫掠、第三人称相机眼位、大头缩放、小鸡交互与跟随屏蔽、武器攻击/后坐力干预。<br><sub><sup>BOT visibility/radar/footstep filtering, AnimGraph2 poses, freeze/auto-jump/airmove/ground-reverse/hull tracing, third-person eye targets, big-head scaling, chicken interactions, and weapon/recoil hooks.</sup></sub> |
@@ -40,19 +41,19 @@
 
 ### 构建与 CI 产物 / Building & CI Outputs
 
-Windows 需要 Python 3.11+、`plugify-gen 1.2.15` 与 Visual Studio x64 / C++23（含 MASM）；Linux 使用 Docker 与下文固定的 Steam Runtime Sniper SDK（GCC 14.2）。构建脚本基于 [runtime/s2sdk.json](runtime/s2sdk.json) 中固定的 S2SDK `3.4.3@e2b88d3` 与 SourceSDK `92f0494` 编译 SDK 与提供者、运行两套 CTest，并分别打包 NativeBase 与 S2SDK fork 安装包。<br>
-<sub><sup>Windows requires Python 3.11+, `plugify-gen 1.2.15`, and Visual Studio x64 / C++23 (with MASM); Linux uses Docker with the pinned Steam Runtime Sniper SDK (GCC 14.2). Driven by [runtime/s2sdk.json](runtime/s2sdk.json) (`S2SDK 3.4.3@e2b88d3`, `SourceSDK 92f0494`), the builder compiles both components, runs both CTest suites, and produces separate install ZIPs.</sup></sub>
+Windows 需要 Python 3.11+、`plugify-gen 1.2.15` 与 Visual Studio x64 / C++23（含 MASM）；Linux 使用 Docker 与下文固定的 Steam Runtime Sniper SDK（GCC 14.2）。构建脚本基于 [runtime/s2sdk.json](runtime/s2sdk.json) 中固定的 S2SDK `3.4.3@a2c393c` 与 SourceSDK `2c0641d` 编译 SDK 与提供者、运行两套 CTest，并分别打包 NativeBase 与 S2SDK fork 安装包。<br>
+<sub><sup>Windows requires Python 3.11+, `plugify-gen 1.2.15`, and Visual Studio x64 / C++23 (with MASM); Linux uses Docker with the pinned Steam Runtime Sniper SDK (GCC 14.2). Driven by [runtime/s2sdk.json](runtime/s2sdk.json) (`S2SDK 3.4.3@a2c393c`, `SourceSDK 2c0641d`), the builder compiles both components, runs both CTest suites, and produces separate install ZIPs.</sup></sub>
 
 ```powershell
 # Windows (PowerShell)
-python scripts/build-sdk.py --generator PATH/plugify-gen.exe --work-dir .work/win --dist dist
+python scripts/build-sdk.py --generator PATH/plugify-gen.exe --work-dir .work/win --resume-source PATH/pinned-sdk --dist dist
 ```
 
 ```bash
 # Linux (Steam Runtime Sniper Docker)
 python3 scripts/build-sdk.py --generator PATH/plugify-gen --work-dir .work/linux \
   --container-image registry.gitlab.steamos.cloud/steamrt/sniper/sdk@sha256:bb30053d3cd19d35c76ae69b2790dbaa1430448006f8240cb6d7e723f2d1940e \
-  --dist dist
+  --resume-source .work/pinned-sdk --dist dist
 ```
 
 - **复用与校验 / Reuse & Validation**：传 `--resume-source` 可复用已检出的干净源码（Linux 下需位于本仓库目录内以便容器挂载）；修改 Hook 键后运行 `python scripts/validate-native-gamedata.py` 校验。[imomoe_native_base.pplugin](imomoe_native_base.pplugin) 是方法与回调 ABI 的唯一真源。<br><sub><sup>Pass `--resume-source` to reuse a clean checkout (placed inside the repo on Linux), validate gamedata edits with `python scripts/validate-native-gamedata.py`, and treat [imomoe_native_base.pplugin](imomoe_native_base.pplugin) as the ABI source of truth.</sup></sub>
@@ -64,19 +65,19 @@ python3 scripts/build-sdk.py --generator PATH/plugify-gen --work-dir .work/linux
 
 | Actions Artifact | 内含安装压缩包 / <sub><sup>Install ZIP Inside</sup></sub> |
 | :--- | :--- |
-| `imomoe-native-base-<platform>` | `imomoe-native-base-0.2.0-<platform>.zip` |
-| `s2sdk-fork-e2b88d3-<platform>` | `s2sdk-fork-3.4.3-e2b88d3-<platform>.zip` |
+| `imomoe-native-base-<platform>` | `imomoe-native-base-0.4.0-<platform>.zip` |
+| `s2sdk-fork-a2c393c-<platform>` | `s2sdk-fork-3.4.3-a2c393c-<platform>.zip` |
 
 > [!NOTE]
-> FunRounds 的新火雨和枪榴弹需要配套的 NativeBase 0.2.0；本地开发使用本仓构建的独立包，已发布的 v0.1.0 保留供旧消费者使用。
+> 本地基线使用尚未公开的 SDK 提交。通过 `--resume-source` 指定配对的干净源码；远端构建须先能从所配置的仓库取得这两个提交。<br><sub><sup>Use clean local SDK checkouts with `--resume-source` until the pinned objects are available to hosted builds.</sup></sub>
 
 ---
 
 ### 安装与回退 / Installation & Rollback
 
 1. 按服务端平台准备两个安装压缩包 / Obtain both ZIPs for your platform:
-   - `imomoe-native-base-0.2.0-<platform>.zip`：仅包含 `envs/imomoe_native_base/`。
-   - `s2sdk-fork-3.4.3-e2b88d3-<platform>.zip`：仅包含 `envs/plugify-plugin-s2sdk/`（内含 `s2sdk-fork.json` 标识 fork 与 SourceSDK 提交）。
+   - `imomoe-native-base-0.4.0-<platform>.zip`：仅包含 `envs/imomoe_native_base/`。
+   - `s2sdk-fork-3.4.3-a2c393c-<platform>.zip`：仅包含 `envs/plugify-plugin-s2sdk/`（内含 `s2sdk-fork.json` 标识 fork 与 SourceSDK 提交）。
 
 2. 首次安装前，请先准备基础运行时，再仅从每个压缩包中复制 `game/` 目录：<br>
    <sub><sup>For a first installation, prepare the base runtime and copy only the `game/` tree from each ZIP:</sup></sub>

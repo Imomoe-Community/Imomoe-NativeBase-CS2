@@ -4,5 +4,5 @@
 #pragma once
 
 namespace funrounds::native::detail {
-void ResetWorldItemMetadata() noexcept;
+bool ShutdownWorldItem() noexcept;
 }

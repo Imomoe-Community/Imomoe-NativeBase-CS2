@@ -24,31 +24,32 @@
 
 ### Exported Capabilities
 
-[imomoe_native_base.pplugin](imomoe_native_base.pplugin) exports **88 methods** across 28 capability groups and **13 callback prototypes**:
+[imomoe_native_base.pplugin](imomoe_native_base.pplugin) exports **92 methods** across 29 capability groups and **14 callback prototypes**:
 
 | Groups | Capabilities & Scope |
 | :--- | :--- |
-| `Clients` | `GetClientUserID`: resolves the current engine userid for `Imomoe-Admin` and other consumers. |
+| `Clients` | `GetClientUserID` resolves engine user IDs; `SnapPlayerViewAngles` issues the native view-angle update for one complete pawn handle. |
 | `Damage`, `Entities` | Player and non-player `TakeDamage` hooks, direct knife/firearm hitbox and source-bearing inspection, `TakeEntityDamageWithWeapon`, `Touch` pre-hooks, and collision group reset. |
 | `RoundScore`, `C4Access`, `MolotovRain`, `Grenades`, `ReloadSync`, `WorldItems`, `RandomSpawn`, `Afterburn`, `Suicide`, `Healthshot` | Native team round completion, C4 plant/defuse gating, native HE/smoke/Molotov projectile creation, rain self-damage filtering, grenade detonation state/holds/duds, reload sync & full-magazine reload, ownerless world items, random deathmatch spawns, player ignition, suicide pickup gating, and healthshot caps. |
+| `Weapons` | Register `SetNativeWeaponCommandCallback` and issue `FireNativeWeaponShot` within that pawn's command callback. It fires one native hitscan shot along the pawn's aim using the selected stock firearm profile without equipping the temporary source. |
 | `GhostVisibility`, `GhostRadar`, `PoseGraph`, `PoseMove`, `PlayerFreeze`, `AirMove`, `GroundReverse`, `WallHang`, `ThirdPerson`, `BigHead`, `ChickenEating`, `ChickenFollow`, `TargetAttack`, `Chrono`, `RecoilImpulse` | BOT visibility/radar/footstep filtering, AnimGraph2 pose graph actions, movement freeze/auto-jump/airmove/ground-reverse/hull tracing, third-person camera eye targets, big-head scaling, chicken use/follow gating, and weapon attack/recoil hooks. |
 
 ---
 
 ### Building & CI Outputs
 
-Use Python 3.11+, `plugify-gen 1.2.15`, and Visual Studio x64/C++23 (with MASM) on Windows. Linux uses Docker and the Steam Runtime Sniper SDK pinned below, with GCC 14.2. The builder uses S2SDK `3.4.3@e2b88d3` with SourceSDK `92f0494`, as pinned in [`runtime/s2sdk.json`](runtime/s2sdk.json). It builds the SDK, compiles the provider, runs both CTest suites, and produces separate NativeBase and fork S2SDK ZIPs.
+Use Python 3.11+, `plugify-gen 1.2.15`, and Visual Studio x64/C++23 (with MASM) on Windows. Linux uses Docker and the Steam Runtime Sniper SDK pinned below, with GCC 14.2. The builder uses S2SDK `3.4.3@a2c393c` with SourceSDK `2c0641d`, as pinned in [`runtime/s2sdk.json`](runtime/s2sdk.json). It builds the SDK, compiles the provider, runs both CTest suites, and produces separate NativeBase and fork S2SDK ZIPs.
 
 ```powershell
 # Windows (PowerShell)
-python scripts/build-sdk.py --generator PATH/plugify-gen.exe --work-dir .work/win --dist dist
+python scripts/build-sdk.py --generator PATH/plugify-gen.exe --work-dir .work/win --resume-source PATH/pinned-sdk --dist dist
 ```
 
 ```bash
 # Linux (Steam Runtime Sniper Docker)
 python3 scripts/build-sdk.py --generator PATH/plugify-gen --work-dir .work/linux \
   --container-image registry.gitlab.steamos.cloud/steamrt/sniper/sdk@sha256:bb30053d3cd19d35c76ae69b2790dbaa1430448006f8240cb6d7e723f2d1940e \
-  --dist dist
+  --resume-source .work/pinned-sdk --dist dist
 ```
 
 Pass `--resume-source` to reuse a clean checkout at both pins. On Linux it must be inside this repository so it is available to the build container. Check changes to hook keys with `python scripts/validate-native-gamedata.py`. [`imomoe_native_base.pplugin`](imomoe_native_base.pplugin) is the method and callback ABI source.
@@ -59,19 +60,19 @@ Pass `--resume-source` to reuse a clean checkout at both pins. On Linux it must 
 
 | Actions artifact | Install ZIP inside |
 | :--- | :--- |
-| `imomoe-native-base-<platform>` | `imomoe-native-base-0.2.0-<platform>.zip` |
-| `s2sdk-fork-e2b88d3-<platform>` | `s2sdk-fork-3.4.3-e2b88d3-<platform>.zip` |
+| `imomoe-native-base-<platform>` | `imomoe-native-base-0.4.0-<platform>.zip` |
+| `s2sdk-fork-a2c393c-<platform>` | `s2sdk-fork-3.4.3-a2c393c-<platform>.zip` |
 
 > [!NOTE]
-> Pair the new FunRounds grenade consumers with locally built NativeBase 0.2.0. The published v0.1.0 assets remain available to older consumers.
+> This local baseline uses SDK commits that have not been published. Build it from clean pinned checkouts with `--resume-source`; the hosted workflow requires the pinned objects to be available from its configured repositories.
 
 ---
 
 ### Installation & Rollback
 
 1. Use the two files for your server's platform:
-   - `imomoe-native-base-0.2.0-<platform>.zip` installs `envs/imomoe_native_base/` only.
-   - `s2sdk-fork-3.4.3-e2b88d3-<platform>.zip` installs `envs/plugify-plugin-s2sdk/` only. Its `s2sdk-fork.json` identifies the fork and SourceSDK commits.
+   - `imomoe-native-base-0.4.0-<platform>.zip` installs `envs/imomoe_native_base/` only.
+   - `s2sdk-fork-3.4.3-a2c393c-<platform>.zip` installs `envs/plugify-plugin-s2sdk/` only. Its `s2sdk-fork.json` identifies the fork and SourceSDK commits.
 
 2. For a first installation, prepare:
    - [S2-Launcher 2.5.8](https://github.com/untrustedmodders/plugify-source2-launcher/releases/tag/v2.5.8) / [Plugify](https://github.com/untrustedmodders/plugify)

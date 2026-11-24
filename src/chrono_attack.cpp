@@ -40,7 +40,7 @@ void* ResolveAttack() {
     }
     auto* entry = ProbeSignature(kAttack);
     auto** table = static_cast<void**>(ProbeVTable(VTableKey{"CWeaponTaser"}));
-    constexpr auto slot = OffsetKey{"FunRounds::TaserPrimaryAttack"};
+    constexpr auto slot = OffsetKey{"FunRounds::WeaponPrimaryAttackSlot"};
     const auto index = ProbeOffset(slot);
     if (!entry || !table || index < 0) return nullptr;
     if (table[index] != entry) {

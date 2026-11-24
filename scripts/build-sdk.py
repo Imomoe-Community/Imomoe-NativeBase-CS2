@@ -444,7 +444,7 @@ def configure_native(source, generated_sdk_include, build, image=None, *, protob
 
 def validate_native_manifest(manifest, package_version):
     if manifest.get("name") != "imomoe_native_base" or manifest.get("version") != package_version:
-        raise ValueError("Native plugin manifest must be funrounds_native at the workspace package version")
+        raise ValueError("Native plugin manifest must be imomoe_native_base at the workspace package version")
     if manifest.get("entry") != "bin/imomoe-native-base":
         raise ValueError("Native plugin manifest has an unexpected entry")
     dependencies = {item.get("name"): item.get("constraints") for item in manifest.get("dependencies", [])}
@@ -489,6 +489,16 @@ def find_output(build, *relative_paths):
         if path.is_file():
             return path
     raise FileNotFoundError("Build output missing: " + " or ".join(str(build / path) for path in relative_paths))
+
+
+def native_source_identity():
+    if not (ROOT / ".git").exists():
+        return {"source_commit": None, "source_state": "source_archive"}
+    commit = checked(git_command("-C", ROOT, "rev-parse", "HEAD"), capture=True).stdout.strip()
+    changes = checked(
+        git_command("-C", ROOT, "status", "--porcelain"), capture=True
+    ).stdout.strip()
+    return {"source_commit": commit, "source_state": "working_tree_modified" if changes else "git_checkout"}
 
 
 def main():
@@ -591,6 +601,7 @@ def main():
         "provider_version": provider["version"],
         "package_version": package_version,
         "native": {
+            **native_source_identity(),
             "manifest": "imomoe_native_base/imomoe_native_base.pplugin",
             "version": native_manifest["version"],
             "entry": native_manifest["entry"],
