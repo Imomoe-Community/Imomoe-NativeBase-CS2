@@ -17,8 +17,8 @@ from package import package
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "runtime/s2sdk.json"
 NATIVE_VERSION = json.loads((ROOT / "imomoe_native_base.pplugin").read_bytes())["version"]
-EXPECTED_SDK_TESTS = ("convar_lifecycle_tests",)
-SDK_TESTS = "|".join(EXPECTED_SDK_TESTS)
+EXPECTED_SDK_TESTS = ("convar_lifecycle_tests", "convar_manager_tests")
+SDK_TESTS = "^(" + "|".join(EXPECTED_SDK_TESTS) + ")$"
 SDK_BUILD_TARGETS = ("plugify-plugin-s2sdk", *EXPECTED_SDK_TESTS)
 EXPECTED_NATIVE_TESTS = (
     "funrounds_native_boundary_test",
@@ -413,7 +413,7 @@ def configure(source, build, image=None):
     ]
     checked_build(["cmake", "-S", source, "-B", build, *generator, *common, *options], image=image)
     build_targets(build, SDK_BUILD_TARGETS, image)
-    run_ctest(build / SOURCESDK_PATH, SDK_TESTS, EXPECTED_SDK_TESTS, "SDK", image)
+    run_ctest(build, SDK_TESTS, EXPECTED_SDK_TESTS, "SDK", image)
 
 
 def generate_sdk_cpp_imports(generator, output):

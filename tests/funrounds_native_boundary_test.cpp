@@ -12,6 +12,7 @@
 #include "chicken_follow_policy.hpp"
 #include "damage_call_scope.hpp"
 #include "damage_frame_stack.hpp"
+#include "damage_policy.hpp"
 #include "entity_handle.hpp"
 #include "ground_reverse_policy.hpp"
 #include "linux_image.hpp"
@@ -288,6 +289,18 @@ void player_and_entity_scopes_are_independent() {
     require(EntityScope::SkipRules(&info, entity_callback));
 }
 
+void only_force_death_bypasses_player_damage_callbacks() {
+    using funrounds::native::detail::ShouldDispatchPlayerDamage;
+
+    constexpr std::uint64_t forceDeath = 0x10;
+    constexpr std::uint64_t suppressDamageModification = 0x100;
+    constexpr std::uint64_t radiusDamage = 0x400;
+    require(ShouldDispatchPlayerDamage(0, forceDeath));
+    require(ShouldDispatchPlayerDamage(suppressDamageModification | radiusDamage, forceDeath));
+    require(!ShouldDispatchPlayerDamage(forceDeath, forceDeath));
+    require(!ShouldDispatchPlayerDamage(forceDeath | suppressDamageModification, forceDeath));
+}
+
 void frame_tokens_nest_and_unwind() {
     using funrounds::native::DamageFrameScope;
     using funrounds::native::DamageFrameStack;
@@ -350,5 +363,6 @@ int main() {
     chicken_use_abi_preserves_both_arguments_when_unblocked_and_after_disable();
     scope_is_exact_and_nested();
     player_and_entity_scopes_are_independent();
+    only_force_death_bypasses_player_damage_callbacks();
     frame_tokens_nest_and_unwind();
 }
