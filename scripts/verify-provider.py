@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026 Mai Ooizumi
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""Check every consumed method/prototype signature against the pinned native SDK."""
+"""Check that the full C++ import descriptor matches the pinned S2SDK."""
 
 import argparse
 import json
@@ -11,31 +11,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def signature(method):
-    fields = {"type", "ref", "prototype", "enum"}
-    return (
-        [{key: value for key, value in item.items() if key in fields} for item in method.get("paramTypes", [])],
-        {key: value for key, value in method["retType"].items() if key in fields},
-    )
-
-
 def verify(provider_path, source):
-    provider = json.loads(provider_path.read_text(encoding="utf-8"))
-    native = json.loads((source / "plugify-plugin-s2sdk.pplugin.in").read_text(encoding="utf-8"))
-    counts = {}
-    for group in ("methods", "prototypes"):
-        actual = {method["name"]: method for method in native[group]}
-        for method in provider[group]:
-            name = method["name"]
-            if name not in actual:
-                raise ValueError(f"Missing native {group}: {name}")
-            if signature(method) != signature(actual[name]):
-                raise ValueError(f"Native ABI mismatch: {name}")
-        counts[group] = len(provider[group])
     version = (source / "version.txt").read_text(encoding="utf-8").strip()
-    if provider["version"] != version:
-        raise ValueError(f"Provider version {provider['version']} does not match SDK {version}")
-    return {"sdk_version": version, **counts, "abi": "matched"}
+    template = (source / "plugify-plugin-s2sdk.pplugin.in").read_text(encoding="utf-8")
+    native = json.loads(template.replace("${S2SDK_VERSION}", version).replace("${S2SDK_PACKAGE}", "s2sdk"))
+    provider = json.loads(provider_path.read_bytes())
+    if provider != native:
+        raise ValueError("C++ import descriptor differs from the pinned S2SDK descriptor")
+    return {
+        "sdk_version": version,
+        "methods": len(native["methods"]),
+        "prototypes": len(native["prototypes"]),
+        "abi": "matched",
+    }
 
 
 def main():

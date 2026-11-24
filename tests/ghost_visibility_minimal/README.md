@@ -99,24 +99,10 @@ The zero-human RCON validator requires normal playback to start with
 enables `sv_cheats` only for `bot_kill` so source-death cleanup can be observed.
 It immediately verifies the original cheat value is restored.
 
-The test-only provider manifest starts with the methods and prototypes from the
-selected S2SDK descriptor, then adds any missing `OnGameFrame_Register` and
-`OnGameFrame_Unregister` imports and their `OnGameFrameCallback` prototype for
-the main-thread guard. Existing listener entries are retained only when their
-callback ABI matches. The S2SDK version follows `runtime/s2sdk.json`; provider
-method and prototype counts follow the selected SDK.
-
-## Current product route
-
-Product acceptance uses the product's own Ghost configuration and runtime publisher;
-see [product-acceptance.md](product-acceptance.md). During product acceptance,
+Use the S2SDK descriptor pinned by `runtime/s2sdk.json`, including the official
+GameFrame listener imports. While the production visibility hook is loaded,
 use only the read-only `status`, `cvar`, `reload_schema`, and `snapshot`
-queries. The `sound` and `sound_stop` commands are active audio probes, not
-part of the product's quiet or breathing trials. Do not call `start`, `target`,
-`clear`, or `stop` while `imomoe_native_base` owns the resident production
-visibility hook. The `start` path checks PolyHook for an existing detour at
-the same signature and refuses to attach over it; the product runbook avoids
-issuing the command entirely.
+queries.
 
 ## Historical standalone diagnostic BOT procedure
 

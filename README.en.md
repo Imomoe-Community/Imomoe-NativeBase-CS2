@@ -24,11 +24,11 @@
 
 ### Exported Capabilities
 
-[imomoe_native_base.pplugin](imomoe_native_base.pplugin) exports **92 methods** across 29 capability groups and **14 callback prototypes**:
+[imomoe_native_base.pplugin](imomoe_native_base.pplugin) exports **93 methods** across 29 capability groups and **14 callback prototypes**:
 
 | Groups | Capabilities & Scope |
 | :--- | :--- |
-| `Clients` | `GetClientUserID` resolves engine user IDs; `SnapPlayerViewAngles` issues the native view-angle update for one complete pawn handle. |
+| `Clients` | `GetClientUserID` resolves engine user IDs; `SnapPlayerViewAngles` updates view angles for one complete pawn handle; `ForceRespawnClient` performs a full engine respawn by slot. |
 | `Damage`, `Entities` | Player and non-player `TakeDamage` hooks, direct knife/firearm hitbox and source-bearing inspection, `TakeEntityDamageWithWeapon`, `Touch` pre-hooks, and collision group reset. |
 | `RoundScore`, `C4Access`, `MolotovRain`, `Grenades`, `ReloadSync`, `WorldItems`, `RandomSpawn`, `Afterburn`, `Suicide`, `Healthshot` | Native team round completion, C4 plant/defuse gating, native HE/smoke/Molotov projectile creation, rain self-damage filtering, grenade detonation state/holds/duds, reload sync & full-magazine reload, ownerless world items, random deathmatch spawns, player ignition, suicide pickup gating, and healthshot caps. |
 | `Weapons` | Register `SetNativeWeaponCommandCallback` and issue `FireNativeWeaponShot` within that pawn's command callback. It fires one native hitscan shot along the pawn's aim using the selected stock firearm profile without equipping the temporary source. |
@@ -38,7 +38,7 @@
 
 ### Building & CI Outputs
 
-Use Python 3.11+, `plugify-gen 1.2.15`, and Visual Studio x64/C++23 (with MASM) on Windows. Linux uses Docker and the Steam Runtime Sniper SDK pinned below, with GCC 14.2. The builder uses S2SDK `3.4.3@a2c393c` with SourceSDK `2c0641d`, as pinned in [`runtime/s2sdk.json`](runtime/s2sdk.json). It builds the SDK, compiles the provider, runs both CTest suites, and produces separate NativeBase and fork S2SDK ZIPs.
+Use Python 3.11+, `plugify-gen 1.2.15`, and Visual Studio x64/C++23 (with MASM) on Windows. Linux uses Docker and the Steam Runtime Sniper SDK pinned below, with GCC 14.2. The builder uses S2SDK `3.5.1@abc161b` with SourceSDK `e4e7260`, as pinned in [`runtime/s2sdk.json`](runtime/s2sdk.json). It builds the SDK, compiles the provider, runs both CTest suites, and produces separate NativeBase and fork S2SDK ZIPs.
 
 ```powershell
 # Windows (PowerShell)
@@ -52,7 +52,7 @@ python3 scripts/build-sdk.py --generator PATH/plugify-gen --work-dir .work/linux
   --resume-source .work/pinned-sdk --dist dist
 ```
 
-Pass `--resume-source` to reuse a clean checkout at both pins. On Linux it must be inside this repository so it is available to the build container. Check changes to hook keys with `python scripts/validate-native-gamedata.py`. [`imomoe_native_base.pplugin`](imomoe_native_base.pplugin) is the method and callback ABI source.
+Pass `--resume-source` to reuse a clean checkout at both pins. Work directories can be under this checkout's `.work/` or `IMOMOE_WORK_ROOT`. Check changes to hook keys with `python scripts/validate-native-gamedata.py`. [`imomoe_native_base.pplugin`](imomoe_native_base.pplugin) is the method and callback ABI source.
 
 #### CI Outputs
 
@@ -61,10 +61,10 @@ Pass `--resume-source` to reuse a clean checkout at both pins. On Linux it must 
 | Actions artifact | Install ZIP inside |
 | :--- | :--- |
 | `imomoe-native-base-<platform>` | `imomoe-native-base-0.4.0-<platform>.zip` |
-| `s2sdk-fork-a2c393c-<platform>` | `s2sdk-fork-3.4.3-a2c393c-<platform>.zip` |
+| `s2sdk-fork-<platform>` | `s2sdk-fork-3.5.1-abc161b-<platform>.zip` |
 
 > [!NOTE]
-> This local baseline uses SDK commits that have not been published. Build it from clean pinned checkouts with `--resume-source`; the hosted workflow requires the pinned objects to be available from its configured repositories.
+> The fork exposes the official S2SDK 3.5.1 ABI. Use `--resume-source` locally until hosted CI can fetch the pinned fork commit.
 
 ---
 
@@ -72,7 +72,7 @@ Pass `--resume-source` to reuse a clean checkout at both pins. On Linux it must 
 
 1. Use the two files for your server's platform:
    - `imomoe-native-base-0.4.0-<platform>.zip` installs `envs/imomoe_native_base/` only.
-   - `s2sdk-fork-3.4.3-a2c393c-<platform>.zip` installs `envs/plugify-plugin-s2sdk/` only. Its `s2sdk-fork.json` identifies the fork and SourceSDK commits.
+   - `s2sdk-fork-3.5.1-abc161b-<platform>.zip` installs `envs/plugify-plugin-s2sdk/` only. Its `s2sdk-fork.json` identifies the fork and SourceSDK commits.
 
 2. For a first installation, prepare:
    - [S2-Launcher 2.5.8](https://github.com/untrustedmodders/plugify-source2-launcher/releases/tag/v2.5.8) / [Plugify](https://github.com/untrustedmodders/plugify)
@@ -90,7 +90,7 @@ Pass `--resume-source` to reuse a clean checkout at both pins. On Linux it must 
 ### Maintenance Boundary
 
 - FunRounds and Admin release only their own plugins. NativeBase owns Imomoe's native capabilities.
-- S2SDK `3.4.3@e2b88d3` is the comparison baseline for the packaging split, not a long-term pin. Follow CS2 changes that affect Plugify, S2SDK, or other dependencies. While the fork is in use, keep it in sync with upstream and carry only necessary differences.
+- Keep the official S2SDK export ABI and carry only necessary internal fixes in the fork.
 - Send generic SDK fixes upstream. When adopting an official release that contains an accepted fix, remove its local patch. If upstream declines a change that Imomoe still needs, decide whether it belongs in NativeBase or in the consumer based on why it is needed.
 
 ---

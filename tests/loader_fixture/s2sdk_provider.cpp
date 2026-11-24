@@ -920,8 +920,6 @@ extern "C" PLUGIN_API bool AddConsoleCommand(const plg::string&,
 
 extern "C" PLUGIN_API bool RemoveCommand(const plg::string&, s2sdk::ConCommandCallback) { return true; }
 
-extern "C" PLUGIN_API bool HasConsoleCommandCallbacks(const plg::string&) { return false; }
-
 extern "C" PLUGIN_API std::uint64_t FindConVar(const plg::string&) { return UINT64_MAX; }
 
 extern "C" PLUGIN_API std::int16_t UserMessageFindMessageIdByName(const plg::string&) { return -1; }

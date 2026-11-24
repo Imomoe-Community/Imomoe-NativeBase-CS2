@@ -12,7 +12,7 @@
   "dependencies": [
     {
       "name": "s2sdk",
-      "constraints": "3.4.3"
+      "constraints": "3.5.1"
     },
     {
       "name": "polyhook",
@@ -20,6 +20,16 @@
     }
   ],
   "methods": [
+    {
+      "name": "ForceRespawnClient",
+      "funcName": "ForceRespawnClient",
+      "group": "Clients",
+      "description": "On the game thread, performs a full engine respawn for the slot, including a live player. Does nothing if the player pawn cannot be safely owned by the controller.",
+      "paramTypes": [
+        { "name": "playerSlot", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "void" }
+    },
     {
       "name": "SnapPlayerViewAngles",
       "funcName": "SnapPlayerViewAngles",

@@ -50,6 +50,6 @@ jobs:
           if-no-files-found: error
       - uses: actions/upload-artifact@v7.0.2
         with:
-          name: s2sdk-fork-a2c393c-${{ matrix.platform }}
-          path: dist/s2sdk-fork-3.4.3-a2c393c-${{ matrix.platform }}.zip
+          name: s2sdk-fork-${{ matrix.platform }}
+          path: dist/s2sdk-fork-*-${{ matrix.platform }}.zip
           if-no-files-found: error

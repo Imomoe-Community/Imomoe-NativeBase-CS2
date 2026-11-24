@@ -11,7 +11,7 @@
   "language": "cpp",
   "dependencies": [
     { "name": "imomoe_native_base", "constraints": "0.4.0" },
-    { "name": "s2sdk", "constraints": "=3.4.3" }
+    { "name": "s2sdk", "constraints": "=3.5.1" }
   ],
   "methods": []
 }

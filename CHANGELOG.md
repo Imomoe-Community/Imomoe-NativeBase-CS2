@@ -12,8 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **ABI 变更 / Breaking ABI:** 用 `CreateGrenadeProjectile` 和按类型分派的 `CanCreateGrenadeProjectile` 替代 0.1.0 的火雨弹体工厂，支持原生 Molotov、HE 和烟雾。火雨自伤隔离仍按精确 inferno 来源显式启用。 / The typed Molotov, HE and smoke factory replaces the 0.1.0 rain factory; the opt-in rain self-damage policy retains its exact inferno lineage.
 - **原生实弹 / Native shots:** 原生武器命令窗口内的霰弹保持多弹丸入射墙面效果，不重复发送穿透出口。 / In the native weapon command window, shotgun shots keep their stock entry impacts without adding exit impacts.
-- **客户端 / Clients:** 新增经验证的 `SnapPlayerViewAngles`，保留 Admin 的 `GetClientUserID`。 / Adds the verified view-angle call and retains Admin's engine user ID export.
-- **构建 / Build:** CS2 `26879581 / 2000950` 的 gamedata 及配对 SDK 源码由 [runtime/s2sdk.json](runtime/s2sdk.json) 固定。 / Adapts gamedata to this CS2 build and pins the matching SDK sources.
+- **客户端 / Clients:** 新增 `ForceRespawnClient` 和 `SnapPlayerViewAngles`，保留 Admin 的 `GetClientUserID`。 / Adds full engine respawn and view-angle updates; retains Admin's engine user ID export.
+- **构建 / Build:** 为 CS2 `26879581 / 2000950` 固定 S2SDK 3.5.1 与上游 SourceSDK `e4e7260`，S2SDK 保持官方导出 ABI。 / Pins S2SDK 3.5.1 and upstream SourceSDK `e4e7260` for this CS2 build, with the official S2SDK export ABI.
 
 ## [0.1.0] - 2026-11-22
 

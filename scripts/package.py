@@ -34,6 +34,8 @@ def package(output, dist, sdk_license):
     sdk = json.loads(sdk_manifest.read_bytes())
     if (sdk["name"], sdk["version"], sdk["entry"]) != ("s2sdk", lock["version"], "bin/plugify-plugin-s2sdk"):
         raise ValueError("Expected the generated fork S2SDK runtime descriptor")
+    if sdk != json.loads((ROOT / "bindings/s2sdk.pplugin").read_bytes()):
+        raise ValueError("Staged S2SDK descriptor differs from the C++ import descriptor")
     if (native_root / "gamedata/imomoe-native-base.jsonc").read_bytes() != (ROOT / "gamedata/imomoe-native-base.jsonc").read_bytes():
         raise ValueError("Staged NativeBase gamedata differs from source")
 

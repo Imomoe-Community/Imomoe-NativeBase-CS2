@@ -1,7 +1,12 @@
 {
-  "$schema": "https://raw.githubusercontent.com/Mai-Ooizumi/plugify-plugin-s2sdk/e2b88d3f1d94b367329ce40873aeffd6e0ff78ac/schemas/gamedata.schema.json",
+  "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify-plugin-s2sdk/v3.5.1/schemas/gamedata.schema.json",
   "csgo": {
     "Signatures": {
+      "CBasePlayerController::SetPawn": {
+        "library": "server",
+        "win64": "44 88 4C 24 ? 53 57 41 54 41 56 41 57 48 83 EC",
+        "linuxsteamrt64": "55 48 8D 87 ? ? ? ? 48 89 E5 41 57 41 56 41 89 CE 41 55 45 89 CD"
+      },
       // CBasePlayerPawn::SnapViewAngles also queues the client view correction.
       "PlayerPawn::SnapViewAngles": {
         "library": "server",
@@ -319,6 +324,10 @@
       }
     },
     "Offsets": {
+      "CBasePlayerController::RoundRespawn": {
+        "win64": 274,
+        "linuxsteamrt64": 276
+      },
       "FunRounds::RecoilImpulse::Callsite": { "win64": 388, "linuxsteamrt64": 242 },
       "FunRounds::RecoilImpulse::CallOpcode": { "win64": 19, "linuxsteamrt64": 21 },
       "FunRounds::RoundScoreState": { "win64": 3852, "linuxsteamrt64": 3852 },

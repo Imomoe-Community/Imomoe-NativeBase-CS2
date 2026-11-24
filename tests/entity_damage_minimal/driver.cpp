@@ -701,15 +701,11 @@ class Driver final : public plg::Plugin {
 public:
     plg::PluginResult OnPluginStart() override {
         try {
-            if (s2sdk::HasConsoleCommandCallbacks(plg::string(kCommand))) {
-                return plg::PluginResult{"Entity-damage diagnostic command already exists"};
-            }
             if (!s2sdk::AddConsoleCommand(plg::string(kCommand),
                                           plg::string("Test the native non-player damage callback on owned chickens"),
                                           s2sdk::ConVarFlag::None,
                                           Command,
                                           s2sdk::HookMode::Pre)) {
-                (void)s2sdk::RemoveCommandListener(plg::string(kCommand), Command, s2sdk::HookMode::Pre);
                 return plg::PluginResult{"Entity-damage command registration failed"};
             }
             g_commandRegistered = true;
@@ -741,8 +737,7 @@ public:
         bool commandDetached = true;
         if (g_commandRegistered) {
             try {
-                (void)s2sdk::RemoveCommandListener(plg::string(kCommand), Command, s2sdk::HookMode::Pre);
-                commandDetached = !s2sdk::HasConsoleCommandCallbacks(plg::string(kCommand));
+                commandDetached = s2sdk::RemoveCommand(plg::string(kCommand), Command);
                 if (commandDetached) {
                     g_commandRegistered = false;
                 }

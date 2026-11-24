@@ -16,7 +16,7 @@ input identity, retained driver failures and current scope are in [STATUS](../..
 minimal boundary gate, as recorded in the current plan and status.
 ## Build without changing the product
 
-Configure against the paired Plugify include root and generated S2SDK 3.4.3
+Configure against the paired Plugify include root and generated S2SDK 3.5.1
 include root, then build Release:
 
 ```powershell
