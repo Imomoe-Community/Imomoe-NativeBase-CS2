@@ -14,6 +14,7 @@
 #include "damage.hpp"
 #include "engine.hpp"
 #include "fire_rain.hpp"
+#include "grenade_factory.hpp"
 #include "bighead.hpp"
 #include "ghost_radar.hpp"
 #include "ghost_visibility.hpp"
@@ -90,12 +91,14 @@ public:
         try {
             const bool damageClean = funrounds::native::detail::ShutdownDamage();
             const bool attackClean = funrounds::native::detail::ShutdownTargetAttack();
+            const bool commandClean = funrounds::native::detail::ShutdownNativeWeaponCommand();
             const bool chronoClean = funrounds::native::detail::ShutdownChronoAttack();
             const bool c4Clean = funrounds::native::detail::ShutdownC4Access();
             const bool bigHeadClean = funrounds::native::detail::ShutdownBigHead();
             const bool suicideClean = funrounds::native::detail::ShutdownSuicide();
             const bool recoilImpulseClean = funrounds::native::detail::ShutdownRecoilImpulse();
             const bool reloadSyncClean = funrounds::native::detail::ShutdownReloadSync();
+            funrounds::native::detail::ResetGrenadeFactories();
             const bool fireRainClean = funrounds::native::detail::ShutdownMolotovRain();
             const bool standardGrenadesClean = funrounds::native::detail::ShutdownStandardGrenades();
             const bool touchClean = funrounds::native::detail::ShutdownTouch();
@@ -107,21 +110,21 @@ public:
             const bool ghostVisibilityClean = funrounds::native::detail::ShutdownGhostVisibility();
             const bool interactionsClean = funrounds::native::detail::ShutdownInteractions();
             const bool thirdPersonClean = funrounds::native::detail::ShutdownThirdPersonEye();
+            const bool worldItemClean = funrounds::native::detail::ShutdownWorldItem();
 #if defined(FUNROUNDS_NATIVE_LIFECYCLE_PROBE)
             const bool probeClean = funrounds::native::detail::StopLifecycleProbe();
 #else
             constexpr bool probeClean = true;
 #endif
-            if (!damageClean || !attackClean || !chronoClean || !c4Clean || !bigHeadClean || !suicideClean || !recoilImpulseClean || !reloadSyncClean || !fireRainClean || !standardGrenadesClean || !touchClean || !airMoveClean || !groundReverseClean || !ghostRadarClean ||
+            if (!damageClean || !attackClean || !commandClean || !chronoClean || !c4Clean || !bigHeadClean || !suicideClean || !recoilImpulseClean || !reloadSyncClean || !fireRainClean || !standardGrenadesClean || !touchClean || !airMoveClean || !groundReverseClean || !ghostRadarClean ||
                 !ghostVisibilityClean || !poseMoveClean || !playerPoliciesClean ||
-                !interactionsClean || !thirdPersonClean || !probeClean) {
+                !interactionsClean || !thirdPersonClean || !worldItemClean || !probeClean) {
                 return plg::PluginResult{"Native hook cleanup could not be verified"};
             }
             funrounds::native::detail::ResetBurnMetadata();
             funrounds::native::detail::ResetRecoilImpulseMetadata();
             funrounds::native::detail::ResetCollisionSchema();
             funrounds::native::detail::ResetMovementTraceMetadata();
-            funrounds::native::detail::ResetWorldItemMetadata();
             funrounds::native::detail::ShutdownEngine();
             return {};
         } catch (...) {

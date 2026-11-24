@@ -27,6 +27,7 @@
 
 #include "damage_call_scope.hpp"
 #include "damage_frame_stack.hpp"
+#include "damage_policy.hpp"
 #include "detour_slot.hpp"
 #include "engine.hpp"
 #include "entity_handle.hpp"
@@ -149,6 +150,7 @@ struct DamageState {
     std::uint32_t zeusMask{};
     std::uint32_t firearmMask{};
     std::uint64_t radiusFlag{};
+    std::uint64_t forceDeathFlag{};
     std::uint32_t knifeType{};
     std::uint32_t zeusType{};
     std::array<std::uint32_t, 6> firearmTypes{};
@@ -381,6 +383,7 @@ bool ResolveDamageClassification() noexcept {
         !ResolveMask(damage, {"DMG_SHOCK"}, g_damage.zeusMask) ||
         !ResolveMask(damage, {"DMG_BULLET", "DMG_BUCKSHOT"}, g_damage.firearmMask) ||
         !ResolveMask(flags, {"DFLAG_RADIUS_DMG"}, g_damage.radiusFlag) ||
+        !ResolveMask(flags, {"DFLAG_FORCE_DEATH"}, g_damage.forceDeathFlag) ||
         !ResolveEnumValue(weapons, "WEAPONTYPE_KNIFE", g_damage.knifeType) ||
         !ResolveEnumValue(weapons, "WEAPONTYPE_TASER", g_damage.zeusType) ||
         !ResolveSchemaField("CCSPlayerController", "m_hPlayerPawn", sizeof(std::uint32_t), g_damage.playerPawn) ||
@@ -726,6 +729,10 @@ polyhook::ResultType DamageHook(polyhook::HookHandle,
         }
 
         const auto& fields = g_damage.info;
+        const auto damageFlags = ReadField<std::uint64_t>(info, fields.damageFlags.offset);
+        if (!ShouldDispatchPlayerDamage(damageFlags, g_damage.forceDeathFlag)) {
+            return polyhook::ResultType::Ignored;
+        }
         const auto attackerHandle = ToApiHandle(ReadField<std::uint32_t>(info, fields.attackerHandle.offset));
         const auto inflictorHandle = ToApiHandle(ReadField<std::uint32_t>(info, fields.inflictorHandle.offset));
         const auto abilityHandle = ToApiHandle(ReadField<std::uint32_t>(info, fields.abilityHandle.offset));
@@ -738,7 +745,6 @@ polyhook::ResultType DamageHook(polyhook::HookHandle,
                                       : nullptr;
         // Trace metadata belongs to this victim. DamageInfo can also carry a
         // real hitgroup when the caller consumed the trace before TakeDamage.
-        const auto damageFlags = ReadField<std::uint64_t>(info, fields.damageFlags.offset);
         const auto direct = (damageType & g_damage.indirectMask) == 0 && (damageFlags & g_damage.radiusFlag) == 0;
         const auto tracedGroup = traceHitbox ? static_cast<std::int32_t>(traceHitbox->m_nGroupId) : kHitGroupInvalid;
         const auto reportedGroup = ReadField<std::int32_t>(info, fields.hitGroupId.offset);

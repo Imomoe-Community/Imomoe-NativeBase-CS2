@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/refs/tags/v3.1.0/schemas/plugin.schema.json",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "name": "imomoe_native_base",
   "description": "Shared Source 2 engine bridges for Imomoe plugins",
   "author": "Mai Ooizumi",
@@ -12,7 +12,7 @@
   "dependencies": [
     {
       "name": "s2sdk",
-      "constraints": "3.4.3"
+      "constraints": "3.5.1"
     },
     {
       "name": "polyhook",
@@ -20,6 +20,81 @@
     }
   ],
   "methods": [
+    {
+      "name": "ForceRespawnClient",
+      "funcName": "ForceRespawnClient",
+      "group": "Clients",
+      "description": "On the game thread, performs a full engine respawn for the slot, including a live player. Does nothing if the player pawn cannot be safely owned by the controller.",
+      "paramTypes": [
+        { "name": "playerSlot", "type": "int32", "ref": false }
+      ],
+      "retType": { "type": "void" }
+    },
+    {
+      "name": "SnapPlayerViewAngles",
+      "funcName": "SnapPlayerViewAngles",
+      "group": "Clients",
+      "description": "On the game thread, sends the native view-angle change to one complete player pawn handle. True means the native call was issued, not that the client has displayed it.",
+      "paramTypes": [
+        { "name": "pawnHandle", "type": "int32", "ref": false },
+        { "name": "viewAngles", "type": "vec3", "ref": false }
+      ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "SetNativeWeaponCommandCallback",
+      "group": "Weapons",
+      "description": "Registers one game-thread callback at the end of native player command simulation, while the matching controller command remains installed.",
+      "funcName": "SetNativeWeaponCommandCallback",
+      "paramTypes": [
+        {
+          "name": "enabled",
+          "type": "bool"
+        },
+        {
+          "name": "callback",
+          "type": "function",
+          "prototype": "NativeWeaponCommandCallback",
+          "ref": false
+        }
+      ],
+      "retType": {
+        "type": "bool"
+      }
+    },
+    {
+      "name": "HasNativeWeaponShotSupport",
+      "group": "Weapons",
+      "description": "Whether the shared native stock-weapon firing path is available.",
+      "funcName": "HasNativeWeaponShotSupport",
+      "paramTypes": [],
+      "retType": {
+        "type": "bool"
+      }
+    },
+    {
+      "name": "FireNativeWeaponShot",
+      "group": "Weapons",
+      "description": "Issues one native shot from a live player using a stock hitscan weapon profile without equipping it. Only valid within that pawn's native weapon command callback. True means the temporary source spent a cartridge.",
+      "funcName": "FireNativeWeaponShot",
+      "paramTypes": [
+        {
+          "name": "shooterPawn",
+          "type": "int32",
+          "ref": false,
+          "description": "Complete handle of the live firing pawn."
+        },
+        {
+          "name": "weaponDefinition",
+          "type": "uint16",
+          "ref": false,
+          "description": "Stock economy item definition selected by the caller."
+        }
+      ],
+      "retType": {
+        "type": "bool"
+      }
+    },
     {
       "name": "GetClientUserID",
       "group": "Clients",
@@ -156,13 +231,17 @@
       }
     },
     {
-      "name": "CanCreateMolotovRain",
-      "funcName": "CanCreateMolotovRain",
-      "group": "MolotovRain",
-      "description": "Resolves the game-thread Molotov factory and, when requested, exact rain inferno lineage support.",
+      "name": "CanCreateGrenadeProjectile",
+      "funcName": "CanCreateGrenadeProjectile",
+      "group": "Grenades",
+      "description": "Checks one projectile factory: smoke (1), Molotov (2), or HE (4). The optional rain policy also requires exact inferno lineage.",
       "paramTypes": [
         {
-          "name": "requireForceSelfDamage",
+          "name": "kind",
+          "type": "int32"
+        },
+        {
+          "name": "forceRainSelfDamage",
           "type": "bool"
         }
       ],
@@ -171,13 +250,22 @@
       }
     },
     {
-      "name": "CreateMolotovRainProjectile",
-      "funcName": "CreateMolotovRainProjectile",
-      "group": "MolotovRain",
-      "description": "Creates a naturally falling Molotov with either an exact pawn thrower or world attribution (-1). Returns the complete handle, or -1.",
+      "name": "CreateGrenadeProjectile",
+      "funcName": "CreateGrenadeProjectile",
+      "group": "Grenades",
+      "description": "Spawns a native projectile on the game thread. Velocity is in units per second. Thrower is a complete pawn handle, or -1 for world-attributed Molotov. Rain self-damage is opt-in for pawn-attributed Molotov only. Returns a complete entity handle or -1.",
       "paramTypes": [
         {
+          "name": "kind",
+          "type": "int32"
+        },
+        {
           "name": "position",
+          "type": "vec3",
+          "ref": false
+        },
+        {
+          "name": "velocity",
           "type": "vec3",
           "ref": false
         },
@@ -186,7 +274,7 @@
           "type": "int32"
         },
         {
-          "name": "forceSelfDamage",
+          "name": "forceRainSelfDamage",
           "type": "bool"
         }
       ],
@@ -929,6 +1017,23 @@
     }
   ],
   "prototypes": [
+    {
+      "name": "NativeWeaponCommandCallback",
+      "funcName": "NativeWeaponCommandCallback",
+      "paramTypes": [
+        {
+          "name": "slot",
+          "type": "int32"
+        },
+        {
+          "name": "pawn",
+          "type": "int32"
+        }
+      ],
+      "retType": {
+        "type": "void"
+      }
+    },
     {
       "name": "TargetAttackCallback",
       "funcName": "TargetAttackCallback",

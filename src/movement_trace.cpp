@@ -331,6 +331,38 @@ bool TracePlayerMovementHullImpl(std::int32_t pawnHandle,
 
 } // namespace
 
+bool TraceWorldShotContact(std::int32_t shooter, const Vector& muzzle, const Vector& position,
+                           WorldShotContact& contact) noexcept {
+    if (!Finite(muzzle) || !Finite(position)) return false;
+    const auto direction = position - muzzle;
+    const auto distance = direction.Length();
+    if (!std::isfinite(distance) || distance <= 0.0f) return false;
+    const Query query = ResolveQuery();
+    auto* const pawn = static_cast<CEntityInstance*>(EntityFromHandle(shooter));
+    if (!query || !pawn) return false;
+
+    // Recover material and normal locally around this authoritative bullet_impact,
+    // not from another bullet simulation (including penetration and damage).
+    const auto span = direction * (4.0f / distance);
+    const auto start = position - span;
+    constexpr auto shotLayers =
+        (1ull << LAYER_INDEX_CONTENTS_SOLID) | (1ull << LAYER_INDEX_CONTENTS_HITBOX) |
+        (1ull << LAYER_INDEX_CONTENTS_WINDOW) | (1ull << LAYER_INDEX_CONTENTS_PLAYER) |
+        (1ull << LAYER_INDEX_CONTENTS_NPC) | (1ull << LAYER_INDEX_CONTENTS_DEBRIS);
+    CTraceFilter filter(shotLayers, COLLISION_GROUP_DEFAULT, false);
+    filter.SetPassEntity1(pawn);
+    const Ray_t ray{};
+    CGameTrace trace{};
+    (void)query.call(query.receiver, ray, start, position + span, &filter, &trace);
+    if (!trace.DidHit() || trace.m_bStartInSolid || !trace.m_pEnt || !trace.m_pSurfaceProperties ||
+        trace.m_pEnt->GetRefEHandle().GetEntryIndex() != 0 ||
+        !Finite(trace.m_vEndPos) || (trace.m_vEndPos - position).LengthSqr() > 0.25f ||
+        !Finite(trace.m_vHitNormal) || trace.m_vHitNormal.LengthSqr() == 0.0f) return false;
+    contact = {position, start, trace.m_vHitNormal, trace.m_pSurfaceProperties->m_nameHash,
+               HandleFromEntity(trace.m_pEnt)};
+    return contact.entity != kInvalidHandle;
+}
+
 void ResetMovementTraceMetadata() noexcept {
     g_traceSchema = {};
     g_queryAddresses = {};

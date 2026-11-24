@@ -1,12 +1,23 @@
 {
-  "$schema": "https://raw.githubusercontent.com/Mai-Ooizumi/plugify-plugin-s2sdk/e2b88d3f1d94b367329ce40873aeffd6e0ff78ac/schemas/gamedata.schema.json",
+  "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify-plugin-s2sdk/v3.5.1/schemas/gamedata.schema.json",
   "csgo": {
     "Signatures": {
+      "CBasePlayerController::SetPawn": {
+        "library": "server",
+        "win64": "44 88 4C 24 ? 53 57 41 54 41 56 41 57 48 83 EC",
+        "linuxsteamrt64": "55 48 8D 87 ? ? ? ? 48 89 E5 41 57 41 56 41 89 CE 41 55 45 89 CD"
+      },
+      // CBasePlayerPawn::SnapViewAngles also queues the client view correction.
+      "PlayerPawn::SnapViewAngles": {
+        "library": "server",
+        "win64": "48 89 7C 24 ? 55 48 8B EC 48 81 EC ? ? ? ? 48 8B F9 48 8D 4D ? E8 ? ? ? ? F2 0F 10 87",
+        "linuxsteamrt64": "55 48 89 E5 41 57 49 89 FF 48 89 F7 41 56 41 55 41 54 53 48 81 EC ? ? ? ? E8"
+      },
       // CDecoyProjectile's settle Think. Virtual Detonate is a no-op.
       "FunRounds::DecoyDetonateThink": {
         "library": "server",
-        "win64": "40 55 56 48 8B EC 48 83 EC 58 48 8D 55 D8 48 8B F1 E8 AA 5F A0 FF 48 8B C8 E8 A2 55 85 FF 0F 2F 05 D3 7F DA 00 76 39 48 8B 56",
-        "linuxsteamrt64": "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 89 FB 48 83 EC 18 E8 C7 14 8D FF 66 0F D6 45 C0 F3 0F 10 55 C4 F3 0F 11 4D C8 F3 0F 59 C9"
+        "win64": "40 55 56 48 8B EC 48 83 EC 58 48 8D 55 D8 48 8B F1 E8 2A 34 A0 FF 48 8B C8 E8 A2 21 85 FF 0F 2F 05 23 96 DA 00 76 39 48 8B 56",
+        "linuxsteamrt64": "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 89 FB 48 83 EC 18 E8 C7 1D 8D FF 66 0F D6 45 C0 F3 0F 10 55 C4 F3 0F 11 4D C8 F3 0F 59 C9"
       },
       // CS2 2000948: ordinary guns and shotgun fire converge on this recoil wrapper.
       "FunRounds::RecoilImpulse::Weapon": {
@@ -16,8 +27,8 @@
       },
       "FunRounds::RecoilImpulse::Callsite": {
         "library": "server",
-        "win64": "F3 0F 10 94 24 98 00 00 00 49 8B D6 48 8B 8E 50 0E 00 00 E8 B4 B4 02 00",
-        "linuxsteamrt64": "F3 0F 10 4D C4 49 8B BC 24 18 11 00 00 4C 89 EE F3 0F 10 45 C0 E8 34 29 08 00"
+        "win64": "F3 0F 10 94 24 98 00 00 00 49 8B D6 48 8B 8E 50 0E 00 00 E8 24 B5 02 00",
+        "linuxsteamrt64": "F3 0F 10 4D C4 49 8B BC 24 18 11 00 00 4C 89 EE F3 0F 10 45 C0 E8 B4 2A 08 00"
       },
       "FunRounds::RecoilImpulse::Apply": {
         "library": "server",
@@ -28,14 +39,14 @@
       "FunRounds::TaserPrimaryAttack": {
         "library": "server",
         "win64": "40 53 48 83 EC 40 48 8B 01 33 D2 48 8B D9 FF 90 B0 0B 00 00 45 33 C9 45 33 C0 0F 28 C8 48 8B CB E8 5B 98 FC FF 84 C0 0F",
-        "linuxsteamrt64": "55 48 8D 15 E8 BA F4 FF 48 89 E5 41 57 41 56 41 55 41 54 53 48 89 FB 48 81 EC 68 01 00 00 48 8B 07 48 8B 80 F0 0B 00 00"
+        "linuxsteamrt64": "55 48 8D 15 E8 B5 F4 FF 48 89 E5 41 57 41 56 41 55 41 54 53 48 89 FB 48 81 EC 68 01 00 00 48 8B 07 48 8B 80 F0 0B 00 00"
       },
       // The C4-only team CMPs leave all other
       // native predicates and the separate hostage selector branch in place.
       "FunRounds::C4Factory": {
         "library": "server",
         "win64": "48 8B C4 55 57 48 8D 68 98 48 81 EC 58 01 00 00 48 89 58 08 49 8B F9 48 89 70 18 49 8B F0 4C 89 60 20",
-        "linuxsteamrt64": "55 48 8D 05 B8 DC 12 01 48 89 E5 41 57 41 56 41 55 41 54 49 89 F4 53 48 81 EC 08 01 00 00 4C 8D 35 FB"
+        "linuxsteamrt64": "55 48 8D 05 78 E4 12 01 48 89 E5 41 57 41 56 41 55 41 54 49 89 F4 53 48 81 EC 08 01 00 00 4C 8D 35 BB"
       },
       "FunRounds::C4DefuseSelect": {
         "library": "server",
@@ -49,8 +60,8 @@
       },
       "FunRounds::C4Plant": {
         "library": "server",
-        "win64": "40 55 56 41 56 48 8D AC 24 A0 FE FF FF 48 81 EC 60 02 00 00 4C 8B F1 48 8B 0D F2 59 78 01 E8 ED EB F1",
-        "linuxsteamrt64": "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 89 FB 48 81 EC 88 02 00 00 E8 F4 FB 17 00 48 85 C0 0F 84 0E"
+        "win64": "40 55 56 41 56 48 8D AC 24 A0 FE FF FF 48 81 EC 60 02 00 00 4C 8B F1 48 8B 0D 72 80 78 01 E8 ED E8 F1",
+        "linuxsteamrt64": "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 89 FB 48 81 EC 88 02 00 00 E8 74 FF 17 00 48 85 C0 0F 84 0E"
       },
       "FunRounds::C4DefuseSelectTeamCompare": {
         "library": "server",
@@ -65,8 +76,8 @@
       // input dispatcher handles native IN_RELOAD and sends weapon_reload on acceptance.
       "FunRounds::WeaponInputReloadSync": {
         "library": "server",
-        "win64": "48 89 74 24 20 57 48 83 EC 20 48 8B F9 E8 5E 5B 14 00 48 8B F0 48 85 C0 0F 84 5C 03",
-        "linuxsteamrt64": "55 48 89 E5 41 55 41 54 53 48 89 FB 48 83 EC 08 E8 1B D5 18 00 48 85 C0 0F 84 B2 00 00 00 BE 01"
+        "win64": "48 89 74 24 20 57 48 83 EC 20 48 8B F9 E8 2E 60 14 00 48 8B F0 48 85 C0 0F 84 5C 03",
+        "linuxsteamrt64": "55 48 89 E5 41 55 41 54 53 48 89 FB 48 83 EC 08 E8 9B D8 18 00 48 85 C0 0F 84 B2 00 00 00 BE 01"
       },
       // exact capacity compares for full-magazine reload.
       // Linux reuses its admission compare during transfer; Windows inlines both paths.
@@ -109,19 +120,30 @@
         "library": "server",
         "win64": "3B C5 0F 4C E8 48 8B 86 20 03 00 00 80 B8 E2 04 00 00 00 74 04 85 ED 78 04 85 ED 75 1B 48 8B 06 33 D2 48 05 28 0B 00 00 41 B8 01 00 00 00 48 8B CE FF 10 E9 D5 00 00 00"
       },
+      // Factory entries reached from the stock SpawnGrenadeProjectile binding.
+      "FunRounds::HEProjectileFactory": {
+        "library": "server",
+        "win64": "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 48 83 EC ? 48 8B AC 24 ? ? ? ? 49 8B F8",
+        "linuxsteamrt64": "55 4C 89 C1 48 89 E5 41 57 49 89 FF 41 56 49 89 D6"
+      },
+      "FunRounds::SmokeProjectileFactory": {
+        "library": "server",
+        "win64": "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC ? 48 8B B4 24 ? ? ? ? 4D 8B F8",
+        "linuxsteamrt64": "55 4C 89 C1 48 89 E5 41 57 41 56 49 89 FE 41 55 45 89 CD 41 54 4D 89 C4"
+      },
       // native six-argument Molotov projectile factory.
       "FunRounds::MolotovProjectileFactory": {
         "library": "server",
-        "win64": "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 20 4C 89 40 18 55 41 54 41 55 41 56 41 57 48 8D 6C 24 90 48 81 EC 70 01 00 00 45 33 FF 0F 29 70 C8 4C 8B E1 4C 89 7D B8 48 8B 0D F3 57 96 01 48 8D 05 14 EF DD 00",
-        "linuxsteamrt64": "55 48 8D 05 98 6B 0A 01 48 89 E5 41 57 41 56 41 55 41 54 49 89 FC 53 48 81 EC"
+        "win64": "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 20 4C 89 40 18 55 41 54 41 55 41 56 41 57 48 8D 6C 24 90 48 81 EC 70 01 00 00 45 33 FF 0F 29 70 C8 4C 8B E1 4C 89 7D B8 48 8B 0D 63 81 96 01 48 8D 05 B4 08 DE 00",
+        "linuxsteamrt64": "55 48 8D 05 58 78 0A 01 48 89 E5 41 57 41 56 41 55 41 54 49 89 FC 53 48 81 EC"
       },
       // ownerless econ factory and reserve preparation reached
       // by the native multi-grenade drop path. The getter is exact because it
       // consists of just a RIP-relative LEA of the econ system and return.
       "FunRounds::WorldItemEconomy": {
         "library": "server",
-        "win64": "48 8D 05 D9 6E E0 00 C3",
-        "linuxsteamrt64": "48 8D 05 09 C4 E2 00 C3"
+        "win64": "48 8D 05 B9 85 E0 00 C3",
+        "linuxsteamrt64": "48 8D 05 89 C4 E2 00 C3"
       },
       "FunRounds::CreateWorldItem": {
         "library": "server",
@@ -131,7 +153,7 @@
       "FunRounds::PrimeWorldGrenadeAmmo": {
         "library": "server",
         "win64": "48 89 5C 24 08 48 89 74 24 10 48 89 7C 24 18 4C 89 64 24 20 55 41 56 41 57 48 8B EC 48 83 EC 60 45 33 E4 4C",
-        "linuxsteamrt64": "55 48 89 E5 41 57 49 89 FF 41 56 41 55 4C 8D 2D 2C FE FD FF 41 54 53 48 81 EC 88 01 00 00 48 8B 07 48 8B 80"
+        "linuxsteamrt64": "55 48 89 E5 41 57 49 89 FF 41 56 41 55 4C 8D 2D 8C FD FD FF 41 54 53 48 81 EC 88 01 00 00 48 8B 07 48 8B 80"
       },
       // Native TraceShape and a verified caller. The caller loads the physics
       // receiver slot and must still call this exact helper.
@@ -181,8 +203,8 @@
       // The layout anchors below must all resolve relative to this entry and its AngleVectors call.
       "FunRounds::AirMove": {
         "library": "server",
-        "win64": "48 8B C4 55 53 56 57 41 56 48 8D 68 C8 48 81 EC 10 01 00 00 0F 29 70 C8 4C 8D 05 E1 78 E3 00 0F 29 78 B8 48 8B DA 44 0F 29 40 A8 48 8B F9",
-        "linuxsteamrt64": "55 48 8D 15 B1 60 33 FF 48 89 E5 41 57 41 56 4C 8D BD 68 FF FF FF 41 55 4C 8D B5 78 FF FF FF 41 54 49 89 FC 53 48 89 F3 48 81 EC A8 00 00 00"
+        "win64": "48 8B C4 55 53 56 57 41 56 48 8D 68 C8 48 81 EC 10 01 00 00 0F 29 70 C8 4C 8D 05 91 8E E3 00 0F 29 78 B8 48 8B DA 44 0F 29 40 A8 48 8B F9",
+        "linuxsteamrt64": "55 48 8D 15 F5 5E 33 FF 48 89 E5 41 57 41 56 4C 8D BD 68 FF FF FF 41 55 4C 8D B5 78 FF FF FF 41 54 49 89 FC 53 48 89 F3 48 81 EC A8 00 00 00"
       },
       "FunRounds::AirMove::AnglesCall": {
         "library": "server",
@@ -201,7 +223,7 @@
       },
       "FunRounds::AirMove::AngleVectors": {
         "library": "server",
-        "win64": "48 8B C4 48 89 58 08 48 89 70 10 57 48 83 EC 70 F3 0F 10 01 49 8B F8 0F 29 70 E8 4C 8D 40 A8 F3 0F 10 71 04 48 8B DA 0F 29 78 D8 48 8D 50 B8 F3 0F 10 3D 29 EA 35 00",
+        "win64": "48 8B C4 48 89 58 08 48 89 70 10 57 48 83 EC 70 F3 0F 10 01 49 8B F8 0F 29 70 E8 4C 8D 40 A8 F3 0F 10 71 04 48 8B DA 0F 29 78 D8 48 8D 50 B8 F3 0F 10 3D D9 F0 35 00",
         "linuxsteamrt64": "55 48 89 E5 41 55 49 89 F5 41 54 48 8D 45 C0 49 89 D4 53 48 8D 75 D0 48 89 CB 48 83 EC 38 F3 0F 10 05 ?? ?? ?? ?? F3 0F 59 07 F3 0F 10 77 08 F3 0F 10 4F 04"
       },
       // Shared normal movement substep immediately above WalkMove and AirMove.
@@ -286,13 +308,13 @@
       // Each native win site updates the match score state before TerminateRound.
       "FunRounds::RoundScoreAddT": {
         "library": "server",
-        "win64": "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 48 89 7C 24 20 41 56 48 83 EC 20 8B FA 48 8B D9 66 01 39 66 01 79 02 48 8B 35 93 69 89 01",
-        "linuxsteamrt64": "55 66 0F 6E D6 48 89 E5 41 57 F2 0F 70 C2 00 41 56 41 55 41 54 41 89 F4 53 48 89 FB 48 83 EC 48 66 0F 6E 0F 48 8D 05 1D C7 66 01"
+        "win64": "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 48 89 7C 24 20 41 56 48 83 EC 20 8B FA 48 8B D9 66 01 39 66 01 79 02 48 8B 35 73 93 89 01",
+        "linuxsteamrt64": "55 66 0F 6E D6 48 89 E5 41 57 F2 0F 70 C2 00 41 56 41 55 41 54 41 89 F4 53 48 89 FB 48 83 EC 48 66 0F 6E 0F 48 8D 05 5D D1 66 01"
       },
       "FunRounds::RoundScoreAddCT": {
         "library": "server",
-        "win64": "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 48 89 7C 24 20 41 56 48 83 EC 20 8B FA 48 8B D9 66 01 39 66 01 79 02 48 8B 35 73 7E 89 01",
-        "linuxsteamrt64": "55 66 0F 6E D6 48 89 E5 41 57 F2 0F 70 C2 00 41 56 41 55 41 54 41 89 F4 53 48 89 FB 48 83 EC 48 66 0F 6E 0F 48 8D 05 FD C4 66 01"
+        "win64": "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 48 89 7C 24 20 41 56 48 83 EC 20 8B FA 48 8B D9 66 01 39 66 01 79 02 48 8B 35 53 A8 89 01",
+        "linuxsteamrt64": "55 66 0F 6E D6 48 89 E5 41 57 F2 0F 70 C2 00 41 56 41 55 41 54 41 89 F4 53 48 89 FB 48 83 EC 48 66 0F 6E 0F 48 8D 05 3D CF 66 01"
       },
       // Native mutator reset reads and restores CCSPlayerPawn::m_flBigHeadScale.
       "FunRounds::BigHeadScaleReset": {
@@ -302,10 +324,16 @@
       }
     },
     "Offsets": {
+      "CBasePlayerController::RoundRespawn": {
+        "win64": 274,
+        "linuxsteamrt64": 276
+      },
       "FunRounds::RecoilImpulse::Callsite": { "win64": 388, "linuxsteamrt64": 242 },
       "FunRounds::RecoilImpulse::CallOpcode": { "win64": 19, "linuxsteamrt64": 21 },
       "FunRounds::RoundScoreState": { "win64": 3852, "linuxsteamrt64": 3852 },
-      "FunRounds::TaserPrimaryAttack": {
+      // CCSPlayerController's live CCSGOUserCmd*, set around the native movement call.
+      "FunRounds::PlayerControllerCurrentCommand": { "win64": 1800, "linuxsteamrt64": 2528 },
+      "FunRounds::WeaponPrimaryAttackSlot": {
         "win64": 414,
         "linuxsteamrt64": 422
       },

@@ -918,8 +918,8 @@ public:
                 !__s2sdk_GetClientActiveWeapon || !__s2sdk_GetClientWeapons || !__s2sdk_GetClientTeam ||
                 !__s2sdk_GetClientHealth || !__s2sdk_GetClientArmor || !__s2sdk_GetClientFlags ||
                 !__s2sdk_GetEntityOwner || !__s2sdk_GetEntityClassname || !__s2sdk_GetEntSchema2 || !__s2sdk_FindEntityByClassname ||
-                !__s2sdk_GetEntSchemaEnt2 || !__s2sdk_AddConsoleCommand || !__s2sdk_RemoveCommandListener ||
-                !__s2sdk_ReplyToCommand || !__s2sdk_PrintToServer || !__s2sdk_HasConsoleCommandCallbacks ||
+                !__s2sdk_GetEntSchemaEnt2 || !__s2sdk_AddConsoleCommand || !__s2sdk_RemoveCommand ||
+                !__s2sdk_ReplyToCommand || !__s2sdk_PrintToServer ||
                 !__s2sdk_GetClientAbsOrigin || !__s2sdk_GetGameTime || !__s2sdk_EmitSoundToClient || !__s2sdk_StopSound ||
                 !__s2sdk_OnGameFrame_Register || !__s2sdk_OnGameFrame_Unregister ||
                 !__polyhook_HookDetour || !__polyhook_FindDetour ||
@@ -928,40 +928,28 @@ public:
                 !__polyhook_SetReturnBool) {
                 return plg::PluginResult{"Required S2SDK/PolyHook imports unavailable"};
             }
-            if (s2sdk::HasConsoleCommandCallbacks(kCommand)) {
-                return plg::PluginResult{"Diagnostic command already has callbacks"};
+            if (!s2sdk::AddConsoleCommand(
+                    kCommand, "Isolated BOT ghost-visibility gate probe",
+                    s2sdk::ConVarFlag::None, Command, s2sdk::HookMode::Pre)) {
+                return plg::PluginResult{"Diagnostic console command registration failed"};
             }
-
-            const bool commandAdded = s2sdk::AddConsoleCommand(
-                kCommand, "Isolated BOT ghost-visibility gate probe",
-                s2sdk::ConVarFlag::None, Command, s2sdk::HookMode::Pre);
-            const bool callbackPresent = s2sdk::HasConsoleCommandCallbacks(kCommand);
-            if (callbackPresent) {
-                g_commandRegistered = true;
-                g_gameFrameRegistered.store(true, std::memory_order_relaxed);
-                s2sdk::OnGameFrame_Register(GameFrame);
-                s2sdk::PrintToServer(plg::string(
-                    "[ghost-visibility-minimal] loaded passive; detached=true; GameFrame thread recording active; sound probe uses Hostage.Breath only on explicit command"));
-                if (!commandAdded) {
-                    s2sdk::PrintToServer(plg::string(
-                        "[ghost-visibility-minimal] command registration reported failure but callback is present; plugin remains passive for recovery"));
-                }
-                return {};
-            }
-            return plg::PluginResult{"Diagnostic console command callback was not registered; no hook was attempted"};
+            g_commandRegistered = true;
+            g_gameFrameRegistered.store(true, std::memory_order_relaxed);
+            s2sdk::OnGameFrame_Register(GameFrame);
+            s2sdk::PrintToServer(plg::string(
+                "[ghost-visibility-minimal] loaded passive; detached=true; GameFrame thread recording active; sound probe uses Hostage.Breath only on explicit command"));
+            return {};
         } catch (...) {
             try {
                 if (g_gameFrameRegistered.load(std::memory_order_relaxed)) {
                     s2sdk::OnGameFrame_Unregister(GameFrame);
                     g_gameFrameRegistered.store(false, std::memory_order_relaxed);
                 }
-                if (s2sdk::HasConsoleCommandCallbacks(kCommand)) {
-                    g_commandRegistered = true;
-                    s2sdk::PrintToServer(plg::string(
-                        "[ghost-visibility-minimal] startup command may be partially registered; plugin remains passive for recovery"));
-                    return {};
-                }
             } catch (...) {
+            }
+            if (g_commandRegistered) {
+                // Keep the owned recovery command callable after partial startup.
+                return {};
             }
             return plg::PluginResult{"Ghost visibility passive command initialization failed; no hook was attempted"};
         }
@@ -987,10 +975,8 @@ public:
             }
             bool commandClean = true;
             if (g_commandRegistered.load(std::memory_order_relaxed)) {
-                (void)s2sdk::RemoveCommandListener(plg::string(kCommand), Command, s2sdk::HookMode::Pre);
-                if (s2sdk::HasConsoleCommandCallbacks(plg::string(kCommand))) {
-                    commandClean = false;
-                } else {
+                commandClean = s2sdk::RemoveCommand(kCommand, Command);
+                if (commandClean) {
                     g_commandRegistered.store(false, std::memory_order_relaxed);
                 }
             }

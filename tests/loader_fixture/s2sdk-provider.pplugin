@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/v3.1.0/schemas/plugin.schema.json",
-  "version": "3.4.3",
+  "version": "3.5.1",
   "name": "s2sdk",
   "description": "Test-local S2SDK provider for the imomoe-native-base loader fixture",
   "author": "FunRounds native tests",
@@ -81,14 +81,6 @@
         { "name": "name", "type": "string" },
         { "name": "callback", "type": "function", "ref": false, "prototype": "ConCommandCallback" }
       ],
-      "retType": { "type": "bool" }
-    },
-    {
-      "name": "HasConsoleCommandCallbacks",
-      "funcName": "HasConsoleCommandCallbacks",
-      "group": "Commands",
-      "description": "Reports no retained fixture command callbacks.",
-      "paramTypes": [ { "name": "name", "type": "string" } ],
       "retType": { "type": "bool" }
     },
     {

@@ -16,19 +16,10 @@ from package import package
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "runtime/s2sdk.json"
-NATIVE_VERSION = "0.1.0"
-EXPECTED_SDK_TESTS = (
-    "convar_lifecycle_tests",
-    "s2sdk-event-manager-lifecycle-selfcheck",
-    "s2sdk-multi-addon-identity-selfcheck",
-)
-SDK_TESTS = "|".join(EXPECTED_SDK_TESTS)
-SDK_BUILD_TARGETS = (
-    "plugify-plugin-s2sdk",
-    "convar_lifecycle_tests",
-    "s2sdk-event-manager-lifecycle-selfcheck",
-    "s2sdk-multi-addon-identity-selfcheck",
-)
+NATIVE_VERSION = json.loads((ROOT / "imomoe_native_base.pplugin").read_bytes())["version"]
+EXPECTED_SDK_TESTS = ("convar_lifecycle_tests", "convar_manager_tests")
+SDK_TESTS = "^(" + "|".join(EXPECTED_SDK_TESTS) + ")$"
+SDK_BUILD_TARGETS = ("plugify-plugin-s2sdk", *EXPECTED_SDK_TESTS)
 EXPECTED_NATIVE_TESTS = (
     "funrounds_native_boundary_test",
     "airmove_test",
@@ -169,39 +160,53 @@ def prepare_steamrt_build_image(base_image):
     }
 
 
-def container_argument(item):
+def container_argument(item, mounts):
     value = str(item)
     definition = ""
     if value.startswith("-D") and "=" in value:
         definition, value = value.split("=", 1)
         definition += "="
     path = Path(value)
-    if path.is_absolute() and path.resolve().is_relative_to(ROOT):
-        return definition + "/workspace/" + path.resolve().relative_to(ROOT).as_posix()
+    if path.is_absolute():
+        for host, container in mounts:
+            if path.is_relative_to(host):
+                return definition + (Path(container) / path.relative_to(host)).as_posix()
     return str(item)
 
 
 def checked_build(command, image=None, capture=False):
     if not image:
         return checked(command, capture=capture)
-    relative_args = [container_argument(item) for item in command]
+    image_name, mounts = image
     docker = [
         "docker", "run", "--rm", "--network", "none",
         "--user", f"{os.getuid()}:{os.getgid()}",
         "--env", "HOME=/tmp",
-        "--volume", f"{ROOT}:/workspace",
-        "--workdir", "/workspace",
-        image,
-        *relative_args,
     ]
-    return checked(docker, capture=capture)
+    for host, container in mounts:
+        docker += ["--volume", f"{host}:{container}"]
+    return checked([
+        *docker, "--workdir", "/workspace", image_name,
+        *(container_argument(item, mounts) for item in command),
+    ], capture=capture)
+
+
+def build_mounts(workspace, source):
+    mounts = [(ROOT, "/workspace")]
+    if not workspace.is_relative_to(ROOT):
+        mounts.append((workspace, "/build-workspace"))
+    if not any(source.is_relative_to(host) for host, _ in mounts):
+        mounts.append((source, "/sdk-source"))
+    return mounts
 
 
 def checked_workspace(value):
-    work_root = (ROOT / ".work").resolve()
+    shared_root = os.environ.get("IMOMOE_WORK_ROOT")
+    work_root = Path(shared_root).resolve() if shared_root else (ROOT / ".work").resolve()
     workspace = (ROOT / value).resolve() if not value.is_absolute() else value.resolve()
-    if not workspace.is_relative_to(work_root) or workspace == work_root:
-        raise ValueError(f"Build workspace must be a new directory under {work_root}")
+    allowed_roots = ((ROOT / ".work").resolve(), work_root)
+    if not any(workspace != parent and workspace.is_relative_to(parent) for parent in allowed_roots):
+        raise ValueError(f"Build workspace must be a new directory under {allowed_roots[0]} or {work_root}")
     if workspace.exists():
         raise FileExistsError(f"Build workspace already exists; choose a new named path: {workspace}")
     workspace.parent.mkdir(parents=True, exist_ok=True)
@@ -404,8 +409,6 @@ def configure(source, build, image=None):
     options = [
         "-DSOURCESDK_GAME_TARGET=cs2",
         "-DSOURCESDK_ENABLE_TESTS=ON",
-        "-DS2SDK_BUILD_EVENT_MANAGER_SELFCHECK=ON",
-        "-DS2SDK_BUILD_MULTI_ADDON_SELFCHECK=ON",
         "-Dprotobuf_WITH_ZLIB=OFF",
     ]
     checked_build(["cmake", "-S", source, "-B", build, *generator, *common, *options], image=image)
@@ -442,13 +445,13 @@ def configure_native(source, generated_sdk_include, build, image=None, *, protob
     run_ctest(build, NATIVE_TESTS, EXPECTED_NATIVE_TESTS, "native boundary", image)
 
 
-def validate_native_manifest(manifest, package_version):
+def validate_native_manifest(manifest, package_version, sdk_version):
     if manifest.get("name") != "imomoe_native_base" or manifest.get("version") != package_version:
-        raise ValueError("Native plugin manifest must be funrounds_native at the workspace package version")
+        raise ValueError("Native plugin manifest must be imomoe_native_base at the workspace package version")
     if manifest.get("entry") != "bin/imomoe-native-base":
         raise ValueError("Native plugin manifest has an unexpected entry")
     dependencies = {item.get("name"): item.get("constraints") for item in manifest.get("dependencies", [])}
-    expected = {"s2sdk": "3.4.3", "polyhook": f">={POLYHOOK_VERSION}"}
+    expected = {"s2sdk": sdk_version, "polyhook": f">={POLYHOOK_VERSION}"}
     if not all(dependencies.get(name) == constraint for name, constraint in expected.items()):
         raise ValueError(f"Native plugin dependencies must declare the paired runtime minimums: {expected}")
 
@@ -491,13 +494,23 @@ def find_output(build, *relative_paths):
     raise FileNotFoundError("Build output missing: " + " or ".join(str(build / path) for path in relative_paths))
 
 
+def native_source_identity():
+    if not (ROOT / ".git").exists():
+        return {"source_commit": None, "source_state": "source_archive"}
+    commit = checked(git_command("-C", ROOT, "rev-parse", "HEAD"), capture=True).stdout.strip()
+    changes = checked(
+        git_command("-C", ROOT, "status", "--porcelain"), capture=True
+    ).stdout.strip()
+    return {"source_commit": commit, "source_state": "working_tree_modified" if changes else "git_checkout"}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--generator", required=True, type=Path, help="plugify-gen v1.2.15 executable")
-    parser.add_argument("--work-dir", type=Path, help="new workspace under .work/; defaults to .work/nativebase-windows or .work/nativebase-linux")
+    parser.add_argument("--work-dir", type=Path, help="new workspace under .work or IMOMOE_WORK_ROOT; defaults to .work/nativebase-windows or .work/nativebase-linux")
     parser.add_argument("--dist", type=Path, help="output folder for the two platform install ZIPs")
     parser.add_argument("--container-image", help="exact pinned Valve Steam Runtime Sniper SDK base image for Linux builds")
-    parser.add_argument("--resume-source", type=Path, help="reuse a clean pinned SDK checkout (inside this repository on Linux)")
+    parser.add_argument("--resume-source", type=Path, help="reuse a clean pinned SDK checkout")
     args = parser.parse_args()
 
     target = host_name()
@@ -528,8 +541,6 @@ def main():
         raise ValueError(f"Provider version {provider['version']} differs from SDK manifest {spec['version']}")
 
     resume_source = checked_resume_source(args.resume_source) if args.resume_source else None
-    if resume_source and target == "linux-x64" and not resume_source.is_relative_to(ROOT):
-        parser.error("Linux SDK source must be inside this checkout for the container mount")
     if resume_source:
         source = resume_source
         submodules = verify_source(spec, source)
@@ -537,11 +548,9 @@ def main():
         submodules = clone_source(spec, source)
     build_environment = prepare_steamrt_build_image(args.container_image) if target == "linux-x64" else None
 
+    image = (STEAMRT_BUILD_IMAGE, build_mounts(workspace, source)) if build_environment else None
     generated_sdk_include = generate_sdk_cpp_imports(generator, generated_sdk)
-    if target == "linux-x64":
-        configure(source, build, image=STEAMRT_BUILD_IMAGE)
-    else:
-        configure(source, build)
+    configure(source, build, image=image)
     cmake_cache = read_cmake_cache(build)
     if target == "linux-x64" and (
         cmake_cache.get("CMAKE_CXX_COMPILER_ID") != "GNU"
@@ -553,7 +562,7 @@ def main():
         )
 
     if target == "linux-x64":
-        configure_native(source, generated_sdk_include, native_build, image=STEAMRT_BUILD_IMAGE,
+        configure_native(source, generated_sdk_include, native_build, image=image,
                          protobuf_library=build / "external/sourcesdk/thirdparty/protobuf/libprotobuf.a")
     else:
         configure_native(source, generated_sdk_include, native_build,
@@ -576,7 +585,7 @@ def main():
     native_package, native_binary_name = stage_native(native_build, output, target)
     native_manifest = json.loads((native_package / "imomoe_native_base.pplugin").read_text(encoding="utf-8"))
     package_version = NATIVE_VERSION
-    validate_native_manifest(native_manifest, package_version)
+    validate_native_manifest(native_manifest, package_version, spec["version"])
     cmake_generator = cmake_cache.get("CMAKE_GENERATOR", "unknown")
     environment = args.container_image or os.environ.get("FUNROUNDS_SDK_BUILD_ENVIRONMENT", f"native-{target}")
     build_record = {
@@ -591,6 +600,7 @@ def main():
         "provider_version": provider["version"],
         "package_version": package_version,
         "native": {
+            **native_source_identity(),
             "manifest": "imomoe_native_base/imomoe_native_base.pplugin",
             "version": native_manifest["version"],
             "entry": native_manifest["entry"],
@@ -608,7 +618,7 @@ def main():
         "build_environment": build_environment or environment,
         "source_reused": resume_source is not None,
         "cmake": checked_build(
-            ["cmake", "--version"], image=STEAMRT_BUILD_IMAGE if target == "linux-x64" else None,
+            ["cmake", "--version"], image=image,
             capture=True,
         ).stdout.splitlines()[0],
         "cmake_generator": cmake_generator,

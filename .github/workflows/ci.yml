@@ -46,10 +46,10 @@ jobs:
       - uses: actions/upload-artifact@v7.0.2
         with:
           name: imomoe-native-base-${{ matrix.platform }}
-          path: dist/imomoe-native-base-0.1.0-${{ matrix.platform }}.zip
+          path: dist/imomoe-native-base-*-${{ matrix.platform }}.zip
           if-no-files-found: error
       - uses: actions/upload-artifact@v7.0.2
         with:
-          name: s2sdk-fork-e2b88d3-${{ matrix.platform }}
-          path: dist/s2sdk-fork-3.4.3-e2b88d3-${{ matrix.platform }}.zip
+          name: s2sdk-fork-${{ matrix.platform }}
+          path: dist/s2sdk-fork-*-${{ matrix.platform }}.zip
           if-no-files-found: error

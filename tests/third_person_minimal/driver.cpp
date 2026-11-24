@@ -626,12 +626,8 @@ class Driver final : public plg::Plugin {
 public:
     plg::PluginResult OnPluginStart() override {
         try {
-            if (s2sdk::HasConsoleCommandCallbacks(kCommand)) {
-                return plg::PluginResult{"Minimal third-person command already exists"};
-            }
             if (!s2sdk::AddConsoleCommand(kCommand, "Isolated custom-player-camera schema feasibility driver",
                                           s2sdk::ConVarFlag::None, Command, s2sdk::HookMode::Pre)) {
-                (void)s2sdk::RemoveCommandListener(kCommand, Command, s2sdk::HookMode::Pre);
                 return plg::PluginResult{"Minimal third-person command registration failed"};
             }
             g_commandRegistered = true;
@@ -651,8 +647,7 @@ public:
             }
             bool commandRemoved = true;
             if (g_commandRegistered) {
-                (void)s2sdk::RemoveCommand(kCommand, Command);
-                commandRemoved = !s2sdk::HasConsoleCommandCallbacks(kCommand);
+                commandRemoved = s2sdk::RemoveCommand(kCommand, Command);
                 g_commandRegistered = !commandRemoved;
             }
             if (!g_active.empty()) {

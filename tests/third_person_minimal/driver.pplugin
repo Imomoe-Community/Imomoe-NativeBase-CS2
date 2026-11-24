@@ -10,8 +10,8 @@
   "platforms": [],
   "language": "cpp",
   "dependencies": [
-    { "name": "s2sdk", "constraints": "=3.4.3" },
-    { "name": "imomoe_native_base", "constraints": "0.1.0" },
+    { "name": "s2sdk", "constraints": "=3.5.1" },
+    { "name": "imomoe_native_base", "constraints": "0.4.0" },
     { "name": "polyhook", "constraints": ">=2.5.7" }
   ],
   "methods": []

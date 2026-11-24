@@ -212,9 +212,12 @@ add_library(imomoe-native-base SHARED
     src/round_score.cpp
     src/engine.cpp
     src/userid.cpp
+    src/respawn.cpp
+    src/view_angles.cpp
     src/bighead.cpp
     src/burn.cpp
     src/fire_rain.cpp
+    src/grenade_factory.cpp
     src/damage.cpp
     src/touch.cpp
     src/suicide.cpp

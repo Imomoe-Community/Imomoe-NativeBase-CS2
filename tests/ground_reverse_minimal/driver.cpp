@@ -171,13 +171,8 @@ class Driver final : public plg::Plugin {
 public:
     plg::PluginResult OnPluginStart() override {
         try {
-            // S2SDK keeps the engine command name after its last callback is removed.
-            if (s2sdk::HasConsoleCommandCallbacks(kCommand)) {
-                return plg::PluginResult{"Minimal diagnostic command already exists"};
-            }
             if (!s2sdk::AddConsoleCommand(kCommand, "Isolated ground-reverse boundary diagnostic",
                                           s2sdk::ConVarFlag::None, Command, s2sdk::HookMode::Pre)) {
-                (void)s2sdk::RemoveCommandListener(kCommand, Command, s2sdk::HookMode::Pre);
                 return plg::PluginResult{"Minimal diagnostic command registration failed"};
             }
             g_registered = true;
@@ -193,8 +188,7 @@ public:
                 return plg::PluginResult{"Minimal diagnostic native/ConVar recovery failed"};
             }
             if (g_registered) {
-                (void)s2sdk::RemoveCommand(kCommand, Command);
-                if (s2sdk::HasConsoleCommandCallbacks(kCommand)) {
+                if (!s2sdk::RemoveCommand(kCommand, Command)) {
                     return plg::PluginResult{"Minimal diagnostic command cleanup failed"};
                 }
             }

@@ -4,7 +4,6 @@
 #include "fire_rain.hpp"
 
 #include <array>
-#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <string_view>
@@ -24,17 +23,7 @@ namespace funrounds::native::detail {
 namespace {
 
 constexpr std::int32_t kInvalid = -1;
-constexpr std::uint16_t kMolotovItemDefinitionLinux = 46;
-constexpr std::uint32_t kMolotovItemDefinitionWindows = 46;
-constexpr auto kFactorySignature = SignatureKey{"FunRounds::MolotovProjectileFactory"};
-constexpr char kMolotovClass[] = "molotov_projectile";
 constexpr char kInfernoClass[] = "inferno";
-
-#if defined(_WIN32)
-using Factory = void*(__fastcall*)(const float*, const float*, const float*, const float*, void*, std::uint32_t);
-#else
-using Factory = void* (*)(const float*, const float*, const float*, const float*, void*, std::uint16_t);
-#endif
 
 struct RainProjectile {
     std::int32_t thrower{kInvalid};
@@ -51,7 +40,6 @@ struct DetonationScope {
     void* entity{};
 };
 
-Factory g_factory{};
 std::unordered_map<std::int32_t, RainProjectile> g_projectiles;
 std::unordered_map<std::int32_t, RainInferno> g_infernos;
 std::array<DetonationScope, 16> g_detonating{};
@@ -64,14 +52,6 @@ bool g_eventCallbacksActive{};
 SchemaField g_ownerField{};
 SchemaField g_throwerField{};
 bool g_lineageSchemaReady{};
-
-bool HasFactoryImports() noexcept {
-    return __s2sdk_GetGameConfigSignature != nullptr && __s2sdk_GetGameConfigOffset != nullptr &&
-           __s2sdk_IsValidEntHandle != nullptr &&
-           __s2sdk_EntHandleToEntPointer != nullptr && __s2sdk_EntPointerToEntHandle != nullptr &&
-           __s2sdk_GetEntityClassname != nullptr && __s2sdk_GetEntityOwner != nullptr &&
-           __s2sdk_RemoveEntity != nullptr;
-}
 
 bool HasLineageImports() noexcept {
     return __s2sdk_GetGameConfigVTable != nullptr && __s2sdk_HookEvent != nullptr && __s2sdk_UnhookEvent != nullptr &&
@@ -91,17 +71,6 @@ bool ResolveLineageSchema() noexcept {
     }
     g_lineageSchemaReady = true;
     return true;
-}
-
-Factory ResolveFactory() noexcept {
-    if (g_factory) return g_factory;
-    try {
-        if (!HasFactoryImports() || !EnsureEngine()) return nullptr;
-        g_factory = reinterpret_cast<Factory>(ProbeSignature(kFactorySignature));
-    } catch (...) {
-        return nullptr;
-    }
-    return g_factory;
 }
 
 bool ReadDetonateTarget() noexcept {
@@ -270,62 +239,21 @@ bool EnsureLineageCallbacks() noexcept {
 
 } // namespace
 
-bool CanCreateMolotovRain(bool requireForceSelfDamage) noexcept {
-    try {
-        if (!ResolveFactory()) return false;
-        if (!requireForceSelfDamage) return true;
-        return HasLineageImports() && ReadDetonateTarget() && ResolveLineageSchema();
-    } catch (...) {
-        return false;
-    }
+bool MolotovRainSelfDamageAvailable() noexcept {
+    return ReadDetonateTarget() && ResolveLineageSchema();
 }
 
-std::int32_t CreateMolotovRainProjectile(const plg::vec3& position,
-                                        std::int32_t throwerPawn,
-                                        bool forceSelfDamage) noexcept {
-    try {
-        if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z) ||
-            (throwerPawn != kInvalid && !IsPlayerPawn(throwerPawn)) ||
-            (forceSelfDamage && throwerPawn == kInvalid) || !CanCreateMolotovRain(false)) {
-            return kInvalid;
-        }
-        if (forceSelfDamage && (!CanCreateMolotovRain(true) || !EnsureLineageCallbacks())) return kInvalid;
+bool PrepareMolotovRainSelfDamage() noexcept {
+    return MolotovRainSelfDamageAvailable() && EnsureLineageCallbacks();
+}
 
-        const std::array<float, 3> origin{position.x, position.y, position.z};
-        const std::array<float, 3> angles{0.0f, 0.0f, 0.0f};
-        const std::array<float, 3> velocity{0.0f, 0.0f, -100.0f};
-        const std::array<float, 3> angularVelocity{0.0f, 0.0f, 0.0f};
-        void* thrower{};
-        if (throwerPawn != kInvalid && !ValidEntity(throwerPawn, thrower)) return kInvalid;
-        void* projectileEntity =
-#if defined(_WIN32)
-            g_factory(origin.data(), angles.data(), velocity.data(), angularVelocity.data(), thrower,
-                      kMolotovItemDefinitionWindows);
-#else
-            g_factory(origin.data(), angles.data(), velocity.data(), angularVelocity.data(), thrower,
-                      kMolotovItemDefinitionLinux);
-#endif
-        if (!projectileEntity) return kInvalid;
-        const auto projectileHandle = HandleFromEntity(projectileEntity);
-        if (!ValidEntity(projectileHandle, projectileEntity) || !HasClass(projectileHandle, kMolotovClass) ||
-            s2sdk::GetEntityOwner(projectileHandle) != throwerPawn ||
-            (forceSelfDamage && GrenadeThrower(projectileHandle) != throwerPawn)) {
-            if (projectileHandle != kInvalid && s2sdk::IsValidEntHandle(projectileHandle)) {
-                s2sdk::RemoveEntity(projectileHandle);
-            }
-            return kInvalid;
-        }
-        if (forceSelfDamage) {
-            try {
-                g_projectiles.insert_or_assign(projectileHandle, RainProjectile{throwerPawn, true});
-            } catch (...) {
-                s2sdk::RemoveEntity(projectileHandle);
-                return kInvalid;
-            }
-        }
-        return projectileHandle;
+bool TrackMolotovRainSelfDamage(std::int32_t projectile, std::int32_t thrower) noexcept {
+    if (GrenadeThrower(projectile) != thrower) return false;
+    try {
+        g_projectiles.insert_or_assign(projectile, RainProjectile{thrower, true});
+        return true;
     } catch (...) {
-        return kInvalid;
+        return false;
     }
 }
 
@@ -356,7 +284,6 @@ void ClearMolotovRainTracking() noexcept {
 bool ShutdownMolotovRain() noexcept {
     g_eventCallbacksActive = false;
     ClearMolotovRainTracking();
-    g_factory = nullptr;
     const bool clean = RemoveEventHooks();
     if (clean) {
         g_ownerField = {};
@@ -398,16 +325,6 @@ void EndRainMolotovDetonation(void* entity) noexcept {
 }
 
 } // namespace funrounds::native::detail
-
-extern "C" PLUGIN_API bool CanCreateMolotovRain(bool requireForceSelfDamage) noexcept {
-    return funrounds::native::detail::CanCreateMolotovRain(requireForceSelfDamage);
-}
-
-extern "C" PLUGIN_API std::int32_t CreateMolotovRainProjectile(const plg::vec3& position,
-                                                               std::int32_t throwerPawn,
-                                                               bool forceSelfDamage) noexcept {
-    return funrounds::native::detail::CreateMolotovRainProjectile(position, throwerPawn, forceSelfDamage);
-}
 
 extern "C" PLUGIN_API bool ShouldBypassSelfDamageForRain(std::int32_t inflictorHandle,
                                                          std::int32_t victimPawnHandle) noexcept {
