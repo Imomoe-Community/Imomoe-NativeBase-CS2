@@ -38,7 +38,7 @@ struct FirearmTypes {
 };
 
 inline std::optional<float> ScaleImpulse(float magnitude, float factor) noexcept {
-    if (!(factor >= -1.0F && factor <= 6.0F) || factor == 1.0F) return std::nullopt;
+    if (!std::isfinite(factor) || factor == 1.0F) return std::nullopt;
     const float scaled = magnitude * factor;
     return std::isfinite(scaled) ? std::optional{scaled} : std::nullopt;
 }

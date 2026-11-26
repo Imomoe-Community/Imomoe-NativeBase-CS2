@@ -18,12 +18,13 @@ int main() {
     if (ScaleImpulse(2.0F, -1.0F) != -2.0F ||
         ScaleImpulse(2.0F, 0.0F) != 0.0F ||
         ScaleImpulse(2.0F, 0.5F) != 1.0F ||
-        ScaleImpulse(2.0F, 6.0F) != 12.0F) return 3;
+        ScaleImpulse(2.0F, 6.0F) != 12.0F ||
+        ScaleImpulse(2.0F, -10.0F) != -20.0F ||
+        ScaleImpulse(2.0F, 99999.0F) != 199998.0F) return 3;
     if (ScaleImpulse(2.0F, 1.0F) ||
-        ScaleImpulse(2.0F, -1.1F) ||
-        ScaleImpulse(2.0F, 6.1F) ||
         ScaleImpulse(2.0F, std::numeric_limits<float>::quiet_NaN()) ||
         ScaleImpulse(2.0F, std::numeric_limits<float>::infinity()) ||
+        ScaleImpulse(2.0F, -std::numeric_limits<float>::infinity()) ||
         ScaleImpulse(std::numeric_limits<float>::max(), 6.0F)) return 4;
 
     int shot{}, other{};
