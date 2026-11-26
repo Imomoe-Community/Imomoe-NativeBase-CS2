@@ -181,6 +181,24 @@
       "retType": { "type": "bool" }
     },
     {
+      "name": "HasTeamFlashProtectionSupport",
+      "funcName": "HasTeamFlashProtectionSupport",
+      "group": "TeamFlash",
+      "description": "Reports whether the native team flash protection hook and its inputs are available.",
+      "paramTypes": [],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "SetTeamFlashProtection",
+      "funcName": "SetTeamFlashProtection",
+      "group": "TeamFlash",
+      "description": "Enables teammate flash protection or confirms that its native hook and listeners have detached.",
+      "paramTypes": [
+        { "name": "active", "type": "bool", "ref": false }
+      ],
+      "retType": { "type": "bool" }
+    },
+    {
       "name": "HasC4DefuseAccessSupport",
       "funcName": "HasC4DefuseAccessSupport",
       "group": "C4Access",

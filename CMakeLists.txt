@@ -16,7 +16,7 @@ if(WIN32)
 endif()
 
 function(add_funrounds_native_boundary_test)
-    foreach(test_name IN ITEMS funrounds_native_boundary_test airmove_test recoil_impulse_policy_test)
+    foreach(test_name IN ITEMS funrounds_native_boundary_test airmove_test recoil_impulse_policy_test team_flash_policy_test)
         add_executable(${test_name} "${CMAKE_CURRENT_SOURCE_DIR}/tests/${test_name}.cpp")
         target_include_directories(${test_name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
         target_compile_features(${test_name} PRIVATE cxx_std_23)
@@ -208,6 +208,9 @@ add_library(imomoe-native-base SHARED
     src/c4_access.cpp
     src/chrono_attack.cpp
     src/recoil_impulse.cpp
+    src/team_flash.cpp
+    src/team_flash.hpp
+    src/team_flash_policy.hpp
     src/target_attack.cpp
     src/round_score.cpp
     src/engine.cpp

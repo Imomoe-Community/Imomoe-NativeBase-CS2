@@ -27,6 +27,7 @@
 #include "reload_sync.hpp"
 #include "suicide.hpp"
 #include "standard_grenade.hpp"
+#include "team_flash.hpp"
 #include "touch.hpp"
 #include "third_person.hpp"
 #include "world_item.hpp"
@@ -96,6 +97,7 @@ public:
             const bool c4Clean = funrounds::native::detail::ShutdownC4Access();
             const bool bigHeadClean = funrounds::native::detail::ShutdownBigHead();
             const bool suicideClean = funrounds::native::detail::ShutdownSuicide();
+            const bool teamFlashClean = funrounds::native::detail::ShutdownTeamFlash();
             const bool recoilImpulseClean = funrounds::native::detail::ShutdownRecoilImpulse();
             const bool reloadSyncClean = funrounds::native::detail::ShutdownReloadSync();
             funrounds::native::detail::ResetGrenadeFactories();
@@ -117,7 +119,7 @@ public:
             constexpr bool probeClean = true;
 #endif
             if (!damageClean || !attackClean || !commandClean || !chronoClean || !c4Clean || !bigHeadClean || !suicideClean || !recoilImpulseClean || !reloadSyncClean || !fireRainClean || !standardGrenadesClean || !touchClean || !airMoveClean || !groundReverseClean || !ghostRadarClean ||
-                !ghostVisibilityClean || !poseMoveClean || !playerPoliciesClean ||
+                !ghostVisibilityClean || !poseMoveClean || !playerPoliciesClean || !teamFlashClean ||
                 !interactionsClean || !thirdPersonClean || !worldItemClean || !probeClean) {
                 return plg::PluginResult{"Native hook cleanup could not be verified"};
             }

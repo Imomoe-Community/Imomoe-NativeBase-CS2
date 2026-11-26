@@ -24,13 +24,13 @@
 
 ### Exported Capabilities
 
-[imomoe_native_base.pplugin](imomoe_native_base.pplugin) exports **93 methods** across 29 capability groups and **14 callback prototypes**:
+[imomoe_native_base.pplugin](imomoe_native_base.pplugin) exports **96 methods** across 30 capability groups and **14 callback prototypes**:
 
 | Groups | Capabilities & Scope |
 | :--- | :--- |
 | `Clients` | `GetClientUserID` resolves engine user IDs; `SnapPlayerViewAngles` updates view angles for one complete pawn handle; `ForceRespawnClient` performs a full engine respawn by slot. |
 | `Damage`, `Entities` | Player and non-player `TakeDamage` hooks, direct knife/firearm hitbox and source-bearing inspection, `TakeEntityDamageWithWeapon`, `Touch` pre-hooks, and collision group reset. |
-| `RoundScore`, `C4Access`, `MolotovRain`, `Grenades`, `ReloadSync`, `WorldItems`, `RandomSpawn`, `Afterburn`, `Suicide`, `Healthshot` | Native team round completion, C4 plant/defuse gating, native HE/smoke/Molotov projectile creation, rain self-damage filtering, grenade detonation state/holds/duds, reload sync & full-magazine reload, ownerless world items, random deathmatch spawns, player ignition, suicide pickup gating, and healthshot caps. |
+| `RoundScore`, `C4Access`, `MolotovRain`, `Grenades`, `ReloadSync`, `WorldItems`, `RandomSpawn`, `Afterburn`, `Suicide`, `Healthshot`, `TeamFlash` | Native team round completion, C4 plant/defuse gating, native HE/smoke/Molotov projectile creation, rain self-damage filtering, grenade detonation state/holds/duds, reload sync & full-magazine reload, ownerless world items, random deathmatch spawns, player ignition, suicide pickup gating, healthshot caps, and team-flash judging veto. |
 | `Weapons` | Register `SetNativeWeaponCommandCallback` and issue `FireNativeWeaponShot` within that pawn's command callback. It fires one native hitscan shot along the pawn's aim using the selected stock firearm profile without equipping the temporary source. |
 | `GhostVisibility`, `GhostRadar`, `PoseGraph`, `PoseMove`, `PlayerFreeze`, `AirMove`, `GroundReverse`, `WallHang`, `ThirdPerson`, `BigHead`, `ChickenEating`, `ChickenFollow`, `TargetAttack`, `Chrono`, `RecoilImpulse` | BOT visibility/radar/footstep filtering, AnimGraph2 pose graph actions, movement freeze/auto-jump/airmove/ground-reverse/hull tracing, third-person camera eye targets, big-head scaling, chicken use/follow gating, and weapon attack/recoil hooks. |
 

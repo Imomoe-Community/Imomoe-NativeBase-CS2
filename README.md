@@ -26,15 +26,15 @@
 
 ### 导出能力概览 / Exported Capabilities
 
-在 [imomoe_native_base.pplugin](imomoe_native_base.pplugin) 中共声明 **93 个导出方法**与 **14 个回调原型**，覆盖以下能力域：<br>
-<sub><sup>Declares **93 exported methods** across 29 groups and **14 callback prototypes** in [imomoe_native_base.pplugin](imomoe_native_base.pplugin):</sup></sub>
+在 [imomoe_native_base.pplugin](imomoe_native_base.pplugin) 中共声明 **96 个导出方法**（覆盖 30 个能力域）与 **14 个回调原型**，涵盖以下能力域：<br>
+<sub><sup>Declares **96 exported methods** across 30 groups and **14 callback prototypes** in [imomoe_native_base.pplugin](imomoe_native_base.pplugin):</sup></sub>
 
 | 能力域 / <sub><sup>Groups</sup></sub> | 涵盖接口与用途 / <sub><sup>Capabilities & Scope</sup></sub> |
 | :--- | :--- |
 | **客户端**<br><sub><sup>`Clients`</sup></sub> | `GetClientUserID` 查询真实引擎 userid；`SnapPlayerViewAngles` 对单个完整 Pawn 句柄发出原生视角更新；`ForceRespawnClient` 按槽位执行完整引擎重生。<br><sub><sup>`GetClientUserID` resolves engine user IDs; `SnapPlayerViewAngles` issues a native view-angle update for one complete pawn handle; `ForceRespawnClient` performs a full engine respawn by slot.</sup></sub> |
 | **原生实弹**<br><sub><sup>`Weapons`</sup></sub> | 通过 `SetNativeWeaponCommandCallback` 注册回调，在对应 Pawn 的命令窗口内调用 `FireNativeWeaponShot`，按所选原版枪械配置打出一发实弹，不装备临时弹源。<br><sub><sup>Fire a stock-profile hitscan shot inside the matching pawn's registered weapon command callback, without equipping the temporary source.</sup></sub> |
 | **伤害、碰撞与实体**<br><sub><sup>`Damage`, `Entities`</sup></sub> | 玩家与非玩家伤害拦截/改写、直接近战/枪械命中部位与来源方位、实体伤害注入、`Touch` 拦截及标准碰撞组重置。<br><sub><sup>Player/entity `TakeDamage` hooks, direct knife/firearm contact and bearing inspection, `Touch` pre-hooks, and collision group reset.</sup></sub> |
-| **回合与武器投掷物**<br><sub><sup>`RoundScore`, `C4Access`, `MolotovRain`, `Grenades`, `ReloadSync`, `WorldItems`, `RandomSpawn`, `Afterburn`, `Suicide`, `Healthshot`</sup></sub> | 原生回合结算、C4 安放/拆弹控制、原生 HE／烟雾／燃烧瓶弹体工厂、火雨自伤隔离、全投掷物引爆状态与滞留控制、换弹同步与满弹夹换弹、无主道具生成、死亡竞赛随机出生点、点燃、自爆拾取拦截与治疗针上限控制。<br><sub><sup>Native round win completion, C4 plant/defuse gating, native HE/smoke/Molotov projectile creation, rain self-damage filtering, grenade detonation holds/duds, reload sync, world items, random spawns, ignite, suicide pickup gating, and healthshot caps.</sup></sub> |
+| **回合与武器投掷物**<br><sub><sup>`RoundScore`, `C4Access`, `MolotovRain`, `Grenades`, `ReloadSync`, `WorldItems`, `RandomSpawn`, `Afterburn`, `Suicide`, `Healthshot`, `TeamFlash`</sup></sub> | 原生回合结算、C4 安放/拆弹控制、原生 HE／烟雾／燃烧瓶弹体工厂、火雨自伤隔离、全投掷物引爆状态与滞留控制、换弹同步与满弹夹换弹、无主道具生成、死亡竞赛随机出生点、点燃、自爆拾取拦截、治疗针上限控制与友方闪光判定拦截。<br><sub><sup>Native round win completion, C4 plant/defuse gating, native HE/smoke/Molotov projectile creation, rain self-damage filtering, grenade detonation holds/duds, reload sync, world items, random spawns, ignite, suicide pickup gating, healthshot caps, and team-flash judging veto.</sup></sub> |
 | **移动、隐身与表现**<br><sub><sup>`GhostVisibility`, `GhostRadar`, `PoseGraph`, `PoseMove`, `PlayerFreeze`, `AirMove`, `GroundReverse`, `WallHang`, `ThirdPerson`, `BigHead`, `ChickenEating`, `ChickenFollow`, `TargetAttack`, `Chrono`, `RecoilImpulse`</sup></sub> | BOT 视野/雷达/被动脚步声隔离、AnimGraph2 姿态、冻结移动/自动连跳/空中辅助/反向地面移动、碰撞盒扫掠、第三人称相机眼位、大头缩放、小鸡交互与跟随屏蔽、武器攻击/后坐力干预。<br><sub><sup>BOT visibility/radar/footstep filtering, AnimGraph2 poses, freeze/auto-jump/airmove/ground-reverse/hull tracing, third-person eye targets, big-head scaling, chicken interactions, and weapon/recoil hooks.</sup></sub> |
 
 ---

@@ -24,6 +24,7 @@ EXPECTED_NATIVE_TESTS = (
     "funrounds_native_boundary_test",
     "airmove_test",
     "recoil_impulse_policy_test",
+    "team_flash_policy_test",
     "ghost_visibility_policy_test",
     "ghost_radar_policy_test",
     "bighead_policy_test",
