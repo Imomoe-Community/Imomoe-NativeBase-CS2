@@ -979,9 +979,20 @@
       "name": "SetChickenFollowBlocking",
       "funcName": "SetChickenFollowBlocking",
       "group": "ChickenFollow",
-      "description": "On the game thread, enables the native chicken-follow veto or disables it and removes only this provider's detour. Returns false while setup or owned-hook cleanup remains incomplete.",
+      "description": "On the game thread, toggles the global chicken-follow veto without affecting per-chicken blocks. Returns false while setup or owned-hook cleanup remains incomplete.",
       "paramTypes": [
         { "name": "active", "type": "bool", "ref": false }
+      ],
+      "retType": { "type": "bool" }
+    },
+    {
+      "name": "SetChickenUseBlocked",
+      "funcName": "SetChickenUseBlocked",
+      "group": "ChickenFollow",
+      "description": "On the game thread, blocks native follow use for one live chicken by full entity handle. Removing a block accepts an already retired handle. Returns false while setup or owned-hook cleanup remains incomplete.",
+      "paramTypes": [
+        { "name": "handle", "type": "int32", "ref": false },
+        { "name": "blocked", "type": "bool", "ref": false }
       ],
       "retType": { "type": "bool" }
     },

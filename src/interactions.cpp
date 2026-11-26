@@ -74,7 +74,7 @@ struct ChickenFollowUseState {
     void* address{};
     polyhook::HookHandle hook{};
     bool callbackInstalled{};
-    bool active{};
+    ChickenFollowPolicy policy{};
 };
 
 UseTargetState g_useTarget;
@@ -100,7 +100,7 @@ bool HealthshotEmpty() noexcept {
 
 bool ChickenFollowUseEmpty() noexcept {
     return !g_chickenFollowUse.address && !g_chickenFollowUse.hook &&
-           !g_chickenFollowUse.callbackInstalled && !g_chickenFollowUse.active;
+           !g_chickenFollowUse.callbackInstalled && !g_chickenFollowUse.policy.WantsHook();
 }
 
 polyhook::ResultType UseTargetPost(polyhook::HookHandle,
@@ -139,7 +139,12 @@ bool HookImportsAvailable() noexcept {
 }
 
 bool ChickenFollowImportsAvailable() noexcept {
-    return HookImportsAvailable();
+    return __s2sdk_GetGameConfigSignature &&
+           __polyhook_HookDetour && __polyhook_FindDetour && __polyhook_AddCallback &&
+           __polyhook_IsCallbackRegistered && __polyhook_AreCallbacksRegistered &&
+           __polyhook_RemoveCallback && __polyhook_UnhookDetour && __polyhook_GetArgumentPointer &&
+           __s2sdk_GetEntityClassname && __s2sdk_EntHandleToEntPointer &&
+           __s2sdk_EntPointerToEntHandle && __s2sdk_IsValidEntHandle;
 }
 
 bool ResolvePawnControllerSchema(std::int32_t& offset) noexcept {
@@ -359,18 +364,17 @@ bool RemoveHealthshotHooks() noexcept {
     return true;
 }
 
-bool CurrentChickenUseEntity(void* entity) {
-    if (!entity || !__s2sdk_EntPointerToEntHandle || !__s2sdk_IsValidEntHandle ||
-        !__s2sdk_EntHandleToEntPointer || !__s2sdk_GetEntityClassname) {
-        return false;
+std::int32_t CurrentChickenUseHandle(void* entity) {
+    if (!entity) {
+        return kInvalidHandle;
     }
     const auto handle = s2sdk::EntPointerToEntHandle(entity);
     return handle != kInvalidHandle && s2sdk::IsValidEntHandle(handle) &&
-           s2sdk::EntHandleToEntPointer(handle) == entity && s2sdk::GetEntityClassname(handle) == "chicken";
+           s2sdk::EntHandleToEntPointer(handle) == entity && s2sdk::GetEntityClassname(handle) == "chicken"
+        ? handle : kInvalidHandle;
 }
 
 bool RemoveChickenFollowUseHook() noexcept {
-    g_chickenFollowUse.active = false;
     try {
         DetourSlot slot(g_chickenFollowUse.address, g_chickenFollowUse.hook);
         if (!slot.Remove(polyhook::CallbackType::Pre, ChickenFollowUsePre)) return false;
@@ -398,7 +402,6 @@ bool InstallChickenFollowUseHookAt(void* address) {
             (void)RemoveChickenFollowUseHook();
             return false;
         }
-        g_chickenFollowUse.active = true;
         return true;
     } catch (...) {
         (void)RemoveChickenFollowUseHook();
@@ -406,11 +409,16 @@ bool InstallChickenFollowUseHookAt(void* address) {
     }
 }
 
-bool InstallChickenFollowUseHook() {
-    if (!ChickenFollowImportsAvailable()) {
-        return false;
+bool EnableChickenFollowUseHook() {
+    if (g_chickenFollowUse.policy.WantsHook()) {
+        return g_chickenFollowUse.callbackInstalled;
     }
-    return InstallChickenFollowUseHookAt(Signature(kChickenFollowUseSignature));
+    return (ChickenFollowUseEmpty() || RemoveChickenFollowUseHook()) &&
+           InstallChickenFollowUseHookAt(Signature(kChickenFollowUseSignature));
+}
+
+bool ReleaseChickenFollowUseHook() noexcept {
+    return g_chickenFollowUse.policy.WantsHook() || RemoveChickenFollowUseHook();
 }
 
 bool InstallUseTargetHook(UseTargetCallback callback) {
@@ -586,7 +594,7 @@ polyhook::ResultType ChickenFollowUsePre(polyhook::HookHandle,
                                          std::int32_t,
                                          polyhook::ReturnHandle,
                                          polyhook::CallbackType type) noexcept {
-    if (type != polyhook::CallbackType::Pre || !g_chickenFollowUse.active || !parameters) {
+    if (type != polyhook::CallbackType::Pre || !g_chickenFollowUse.policy.WantsHook() || !parameters) {
         return polyhook::ResultType::Ignored;
     }
 #if defined(FUNROUNDS_NATIVE_LIFECYCLE_PROBE)
@@ -594,7 +602,7 @@ polyhook::ResultType ChickenFollowUsePre(polyhook::HookHandle,
 #endif
     try {
         auto* const chicken = polyhook::GetArgument<void*>(parameters, 0);
-        if (!ShouldBlockChickenFollow(g_chickenFollowUse.active, CurrentChickenUseEntity(chicken))) {
+        if (!g_chickenFollowUse.policy.Blocks(CurrentChickenUseHandle(chicken))) {
             return polyhook::ResultType::Ignored;
         }
         return polyhook::ResultType::Supercede;
@@ -649,7 +657,7 @@ bool ProbeChickenFollowSharedDetour() noexcept {
     g_chickenFollowProbeTargetCalls.store(0, std::memory_order_relaxed);
 
     const auto cleanup = [&]() noexcept {
-        g_chickenFollowUse.active = false;
+        g_chickenFollowUse.policy = {};
         if (const auto current = polyhook::FindDetour(target)) {
             if (polyhook::IsCallbackRegistered(current, polyhook::CallbackType::Pre,
                                                 ChickenFollowForeignProbe)) {
@@ -670,6 +678,7 @@ bool ProbeChickenFollowSharedDetour() noexcept {
             (void)cleanup();
             return false;
         }
+        g_chickenFollowUse.policy.all = true;
         const auto original = polyhook::FindDetour(target);
         if (!original || !polyhook::AddCallback(original, polyhook::CallbackType::Pre,
                                                  ChickenFollowForeignProbe) ||
@@ -684,10 +693,10 @@ bool ProbeChickenFollowSharedDetour() noexcept {
             g_chickenFollowProbeCallbacks.load(std::memory_order_relaxed) == 1 &&
             g_chickenFollowProbeForeignCalls.load(std::memory_order_relaxed) == 1;
 
-        g_chickenFollowUse.active = false;
+        g_chickenFollowUse.policy.all = false;
         const bool detached = RemoveChickenFollowUseHook();
         const auto afterDetach = polyhook::FindDetour(target);
-        const bool foreignSurvived = detached && !g_chickenFollowUse.active && !g_chickenFollowUse.callbackInstalled &&
+        const bool foreignSurvived = detached && !g_chickenFollowUse.policy.WantsHook() && !g_chickenFollowUse.callbackInstalled &&
             g_chickenFollowUse.address == target && g_chickenFollowUse.hook == original && afterDetach == original &&
             polyhook::IsCallbackRegistered(afterDetach, polyhook::CallbackType::Pre,
                                             ChickenFollowForeignProbe);
@@ -701,6 +710,7 @@ bool ProbeChickenFollowSharedDetour() noexcept {
             polyhook::FindDetour(target) == original &&
             polyhook::IsCallbackRegistered(original, polyhook::CallbackType::Pre,
                                            ChickenFollowUsePre);
+        g_chickenFollowUse.policy.all = reattached;
         CallChickenFollowSharedProbeTarget();
         const bool eachRanOnceAfterReenable = reattached &&
             g_chickenFollowProbeCallbacks.load(std::memory_order_relaxed) == 2 &&
@@ -716,7 +726,7 @@ bool ProbeChickenFollowSharedDetour() noexcept {
         const bool onlyOwnStillRuns = foreignRemoved &&
             g_chickenFollowProbeCallbacks.load(std::memory_order_relaxed) == 3 &&
             g_chickenFollowProbeForeignCalls.load(std::memory_order_relaxed) == 3;
-        g_chickenFollowUse.active = false;
+        g_chickenFollowUse.policy.all = false;
         const bool released = RemoveChickenFollowUseHook() && ChickenFollowUseEmpty() &&
             polyhook::FindDetour(target) == nullptr;
         CallChickenFollowSharedProbeTarget();
@@ -825,26 +835,43 @@ bool HasChickenFollowBlockSupport() noexcept {
 
 bool SetChickenFollowBlocking(bool active) noexcept {
     if (!active) {
-        return RemoveChickenFollowUseHook();
-    }
-    if (!ChickenFollowUseEmpty() && !g_chickenFollowUse.active && !RemoveChickenFollowUseHook()) {
-        return false;
+        g_chickenFollowUse.policy.all = false;
+        return ReleaseChickenFollowUseHook();
     }
     try {
-        if (InstallChickenFollowUseHook()) {
+        if (ChickenFollowImportsAvailable() && EnableChickenFollowUseHook()) {
+            g_chickenFollowUse.policy.all = true;
             return true;
         }
     } catch (...) {
     }
-    g_chickenFollowUse.active = false;
-    (void)RemoveChickenFollowUseHook();
+    (void)ReleaseChickenFollowUseHook();
+    return false;
+}
+
+bool SetChickenUseBlocked(std::int32_t handle, bool blocked) noexcept {
+    try {
+        if (!blocked) {
+            g_chickenFollowUse.policy.chickens.erase(handle);
+            return ReleaseChickenFollowUseHook();
+        }
+        if (handle != kInvalidHandle && ChickenFollowImportsAvailable() &&
+            CurrentChickenUseHandle(s2sdk::EntHandleToEntPointer(handle)) == handle &&
+            EnableChickenFollowUseHook()) {
+            g_chickenFollowUse.policy.chickens.insert(handle);
+            return true;
+        }
+    } catch (...) {
+    }
+    (void)ReleaseChickenFollowUseHook();
     return false;
 }
 
 bool ShutdownInteractions() noexcept {
     const bool useClean = RemoveUseTargetHook();
     const bool healthshotClean = RemoveHealthshotHooks();
-    const bool chickenFollowClean = RemoveChickenFollowUseHook();
+    g_chickenFollowUse.policy = {};
+    const bool chickenFollowClean = ReleaseChickenFollowUseHook();
     return useClean && healthshotClean && chickenFollowClean;
 }
 
@@ -882,4 +909,8 @@ extern "C" PLUGIN_API bool HasChickenFollowBlockSupport() {
 
 extern "C" PLUGIN_API bool SetChickenFollowBlocking(bool active) {
     return funrounds::native::detail::SetChickenFollowBlocking(active);
+}
+
+extern "C" PLUGIN_API bool SetChickenUseBlocked(std::int32_t handle, bool blocked) {
+    return funrounds::native::detail::SetChickenUseBlocked(handle, blocked);
 }

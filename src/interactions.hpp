@@ -21,6 +21,7 @@ bool UnhookHealthshot(HealthshotCanUseCallback canUse, HealthshotEffectCallback 
 
 bool HasChickenFollowBlockSupport() noexcept;
 bool SetChickenFollowBlocking(bool active) noexcept;
+bool SetChickenUseBlocked(std::int32_t handle, bool blocked) noexcept;
 
 #if defined(FUNROUNDS_NATIVE_LIFECYCLE_PROBE)
 bool ProbeChickenFollowSharedDetour() noexcept;

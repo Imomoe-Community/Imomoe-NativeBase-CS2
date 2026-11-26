@@ -172,12 +172,24 @@ void use_button_release_transition_is_not_currently_down() {
     require(!IsButtonCurrentlyDown(scrollOnly[currentDown], kInUse));
 }
 
-void chicken_follow_block_requires_active_exact_chicken() {
-    using funrounds::native::detail::ShouldBlockChickenFollow;
-    require(!ShouldBlockChickenFollow(false, false));
-    require(!ShouldBlockChickenFollow(false, true));
-    require(!ShouldBlockChickenFollow(true, false));
-    require(ShouldBlockChickenFollow(true, true));
+void chicken_follow_owners_remain_independent_and_check_the_full_handle() {
+    using funrounds::native::detail::ChickenFollowPolicy;
+    constexpr std::int32_t carrier = 0x12340010;
+    constexpr std::int32_t replacement = 0x12350010;
+    ChickenFollowPolicy policy;
+    require(!policy.WantsHook());
+    require(!policy.Blocks(carrier));
+    policy.chickens.insert(carrier);
+    require(policy.WantsHook() && policy.Blocks(carrier) && !policy.Blocks(replacement));
+    policy.all = true;
+    require(policy.Blocks(replacement) && !policy.Blocks(-1));
+    policy.all = false;
+    require(policy.WantsHook() && policy.Blocks(carrier) && !policy.Blocks(replacement));
+    policy.all = true;
+    policy.chickens.erase(carrier);
+    require(policy.WantsHook() && policy.Blocks(carrier));
+    policy.all = false;
+    require(!policy.WantsHook() && !policy.Blocks(carrier));
 }
 
 void* g_chickenUseEntity{};
@@ -195,7 +207,7 @@ void chicken_use_abi_preserves_both_arguments_when_unblocked_and_after_disable()
     using funrounds::native::detail::abi::CChickenChickenUse;
     using funrounds::native::detail::abi::EntityUseInput_t;
     using funrounds::native::detail::abi::UseType;
-    using funrounds::native::detail::ShouldBlockChickenFollow;
+    using funrounds::native::detail::ChickenFollowPolicy;
     static_assert(std::is_same_v<CChickenChickenUse, void (*)(void*, const EntityUseInput_t*)>);
 
     int chicken{};
@@ -204,7 +216,9 @@ void chicken_use_abi_preserves_both_arguments_when_unblocked_and_after_disable()
     const EntityUseInput_t input{&activator, &caller, UseType::Toggle, 0.0F};
     const CChickenChickenUse use = CaptureChickenUse;
     const auto invoke = [&](bool blockingActive) {
-        if (!ShouldBlockChickenFollow(blockingActive, true)) {
+        ChickenFollowPolicy policy;
+        policy.all = blockingActive;
+        if (!policy.Blocks(0x12340010)) {
             use(&chicken, &input);
         }
     };
@@ -359,7 +373,7 @@ int main() {
     ground_reverse_sets_the_acceleration_argument_for_the_platform_abi();
     ground_reverse_requires_positive_finite_acceleration();
     use_button_release_transition_is_not_currently_down();
-    chicken_follow_block_requires_active_exact_chicken();
+    chicken_follow_owners_remain_independent_and_check_the_full_handle();
     chicken_use_abi_preserves_both_arguments_when_unblocked_and_after_disable();
     scope_is_exact_and_nested();
     player_and_entity_scopes_are_independent();
