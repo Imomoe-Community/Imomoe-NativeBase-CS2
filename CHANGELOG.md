@@ -8,12 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.4.0]
+## [0.4.0] - 2026-11-27
 
 - **ABI 变更 / Breaking ABI:** 用 `CreateGrenadeProjectile` 和按类型分派的 `CanCreateGrenadeProjectile` 替代 0.1.0 的火雨弹体工厂，支持原生 Molotov、HE 和烟雾。火雨自伤隔离仍按精确 inferno 来源显式启用。 / The typed Molotov, HE and smoke factory replaces the 0.1.0 rain factory; the opt-in rain self-damage policy retains its exact inferno lineage.
 - **原生实弹 / Native shots:** 原生武器命令窗口内的霰弹保持多弹丸入射墙面效果，不重复发送穿透出口。 / In the native weapon command window, shotgun shots keep their stock entry impacts without adding exit impacts.
 - **客户端 / Clients:** 新增 `ForceRespawnClient` 和 `SnapPlayerViewAngles`，保留 Admin 的 `GetClientUserID`。 / Adds full engine respawn and view-angle updates; retains Admin's engine user ID export.
 - **构建 / Build:** 为 CS2 `26879581 / 2000950` 固定 S2SDK 3.5.2 与上游 SourceSDK `e4e7260`，S2SDK 保持官方导出 ABI。 / Pins S2SDK 3.5.2 and upstream SourceSDK `e4e7260` for this CS2 build, with the official S2SDK export ABI.
+- **后坐力冲击 / Recoil impulse:** 允许后坐力冲击回调返回任意有限缩放因子（含负值反向与零值）。 / Accepts any finite recoil impulse scale from callbacks (including negative and zero multipliers).
+- **鸡群交互 / Chicken follow:** 新增 `SetChickenUseBlocked`，按完整实体句柄阻断原生对鸡按 E 交互，供玩法模式接管按 E 行为。 / Adds `SetChickenUseBlocked` to block native USE interaction per exact chicken handle so gameplay modes can intercept E presses.
+- **防闪光队友 / Teammate flash:** 新增 `HasTeamFlashProtectionSupport` 与 `SetTeamFlashProtection` 原生 Detour，在防闪队友模式下屏蔽同阵营闪光致盲。 / Adds `HasTeamFlashProtectionSupport` and `SetTeamFlashProtection` native detour to block teammate flashbang blinding.
+- **同步换弹 / Reload sync:** 修复子 Tick 点按 R、空弹匣自动换弹及切枪 / 切刀冷却窗口内的同步换弹漏触发，保留全员跨武器同步换弹语义。 / Fixes missed `reload_sync` broadcasts on sub-tick R taps, empty-magazine auto-reloads, and weapon/knife switch deploy cooldowns while preserving cross-weapon full-server reload sync.
 
 ## [0.1.0] - 2026-11-22
 
