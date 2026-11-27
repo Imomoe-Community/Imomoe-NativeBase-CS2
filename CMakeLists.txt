@@ -16,7 +16,8 @@ if(WIN32)
 endif()
 
 function(add_funrounds_native_boundary_test)
-    foreach(test_name IN ITEMS funrounds_native_boundary_test airmove_test recoil_impulse_policy_test team_flash_policy_test)
+    foreach(test_name IN ITEMS funrounds_native_boundary_test airmove_test recoil_impulse_policy_test team_flash_policy_test
+                               reload_sync_policy_test)
         add_executable(${test_name} "${CMAKE_CURRENT_SOURCE_DIR}/tests/${test_name}.cpp")
         target_include_directories(${test_name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
         target_compile_features(${test_name} PRIVATE cxx_std_23)
@@ -238,6 +239,7 @@ add_library(imomoe-native-base SHARED
     src/interactions.cpp
     src/random_spawn.cpp
     src/reload_sync.cpp
+    src/reload_sync_policy.hpp
     src/standard_grenade.cpp
     src/world_item.cpp
     src/movement_trace.cpp

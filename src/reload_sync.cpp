@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 #include "reload_sync.hpp"
+#include "reload_sync_policy.hpp"
 
 #include <algorithm>
 #include <array>
@@ -11,7 +12,6 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 #include <plugin_export.h>
 #include <entity2/entityinstance.h>
@@ -26,8 +26,8 @@
 namespace funrounds::native::detail {
 namespace {
 
-constexpr std::uint64_t kReloadBit = 1ULL << 13;
-constexpr int kMaxPlayers = 64;
+using namespace reload_sync;
+
 constexpr auto kInputSignature = SignatureKey{"FunRounds::WeaponInputReloadSync"};
 constexpr auto kFullAdmissionSignature = SignatureKey{"FunRounds::ReloadFullAdmission"};
 #if defined(_WIN32)
@@ -41,25 +41,6 @@ constexpr std::array<SignatureKey, 4> kFullCallerSignatures{
     SignatureKey{"FunRounds::ReloadFullTransferCall"}, SignatureKey{"FunRounds::ReloadFullAlternateTransferCall"}};
 #endif
 
-
-struct PlayerIdentity {
-    int slot{-1};
-    int controller{-1};
-    int pawnHandle{-1};
-    int weapon{-1};
-    void* pawn{};
-};
-
-struct PendingRequest {
-    PlayerIdentity target;
-};
-
-struct ButtonEdit {
-    bool active{};
-    PlayerIdentity target{};
-    void* weapon{};
-    void* buttonState{};
-};
 
 struct InputHook {
     void* address{};
@@ -75,15 +56,12 @@ struct MidHook {
 
 bool SameTarget(const PlayerIdentity& player) noexcept;
 
-std::vector<PendingRequest> g_pending;
+PolicyState g_policy;
 InputHook g_inputHook;
 std::array<MidHook, kFullSignatures.size()> g_fullHooks{};
 #if defined(__linux__)
 std::array<std::uintptr_t, kFullCallerSignatures.size()> g_fullCallerReturns{};
 #endif
-std::array<std::optional<PlayerIdentity>, kMaxPlayers> g_fullAttempts{};
-std::array<std::optional<PlayerIdentity>, kMaxPlayers> g_fullReceipts{};
-std::size_t g_fullReceiptCount{};
 std::int32_t g_subclassOffset{-1};
 std::int32_t g_reserveClipsOffset{-1};
 struct SyncSchema {
@@ -93,20 +71,24 @@ struct SyncSchema {
     SchemaField reloading{};
     SchemaField reserve{};
     SchemaField clip{};
+    SchemaField nextPrimaryAttackTick{};
     bool ready{};
+    bool tickReady{};
 } g_syncSchema;
-thread_local ButtonEdit g_edit;
-thread_local int g_dispatchWeapon{-1};
-thread_local int g_dispatchSlot{-1};
+thread_local DispatchStack g_dispatch;
+thread_local std::size_t g_untrackedDispatchDepth{};
 bool g_enabled{};
 bool g_fullMagazineEnabled{};
 bool g_reloadEventRegistered{};
 bool g_roundEndEventRegistered{};
 std::array<bool, 5> g_lifecycleEventsRegistered{};
-constexpr std::array<const char*, 5> kLifecycleEvents{
-    "player_death", "player_spawn", "player_disconnect", "bot_takeover", "item_equip"};
-
-
+constexpr std::array<std::pair<const char*, PlayerEvent>, 5> kLifecycleEvents{{
+    {"player_death", PlayerEvent::Death},
+    {"player_spawn", PlayerEvent::Spawn},
+    {"player_disconnect", PlayerEvent::Disconnect},
+    {"bot_takeover", PlayerEvent::BotTakeover},
+    {"item_equip", PlayerEvent::Equip},
+}};
 
 polyhook::ResultType Input(polyhook::HookHandle,
                            polyhook::ParametersHandle,
@@ -127,12 +109,14 @@ void Log(std::string message) noexcept {
     }
 }
 
-bool RequiredImportsAvailable() noexcept {
-    return __s2sdk_GetGameConfigSignature && __s2sdk_GetSchemaOffset && __s2sdk_GetEntSchema2 &&
-           __s2sdk_SetEntSchema2 && __s2sdk_IsClientInGame && __s2sdk_IsClientAlive &&
+bool RequiredImportsAvailable(bool synchronize) noexcept {
+    return (!synchronize || __s2sdk_GetGameTickCount) &&
+           __s2sdk_GetGameConfigSignature && __s2sdk_GetSchemaOffset && __s2sdk_GetEntSchemaEnt2 &&
+           __s2sdk_IsClientInGame && __s2sdk_IsClientAlive &&
            __s2sdk_GetMaxClients && __s2sdk_PlayerSlotToEntHandle && __s2sdk_GetClientPawn &&
            __s2sdk_EntPointerToEntHandle && __s2sdk_GetClientActiveWeapon && __s2sdk_GetEntityOwner &&
-           __s2sdk_IsValidEntHandle && __s2sdk_EntHandleToEntPointer && __s2sdk_GetEventPlayerSlot &&
+           __s2sdk_IsValidEntHandle && __s2sdk_EntHandleToEntPointer && __s2sdk_IsEntityPlayerController &&
+           __s2sdk_GetEventPlayerSlot &&
            __s2sdk_HookEvent && __s2sdk_UnhookEvent && __polyhook_HookDetour && __polyhook_FindDetour &&
            __polyhook_AddCallback && __polyhook_IsCallbackRegistered && __polyhook_RemoveCallback &&
            __polyhook_AreCallbacksRegistered && __polyhook_UnhookDetour && __polyhook_GetArgumentPointer;
@@ -141,7 +125,7 @@ bool RequiredImportsAvailable() noexcept {
 bool FullReloadImportsAvailable() noexcept {
     const bool available = __polyhook_HookDetour2 && __polyhook_GetRegisterUInt32 && __polyhook_SetRegisterUInt32 &&
            __polyhook_GetRegisterUInt64 && __polyhook_SetRegisterUInt64 && __polyhook_GetRegisterPointer &&
-           __s2sdk_GetEntityOwner && __s2sdk_EntHandleToEntPointer && __s2sdk_GetEntSchema2 &&
+           __s2sdk_GetEntityOwner && __s2sdk_EntHandleToEntPointer &&
            __s2sdk_GetEntSchemaEnt2 &&
            __s2sdk_GetMaxClients && __s2sdk_PlayerSlotToEntHandle && __s2sdk_IsClientInGame && __s2sdk_GetClientPawn;
 #if defined(__linux__)
@@ -211,10 +195,16 @@ bool RequiredSyncSchemaAvailable() noexcept {
     try {
         if (!ResolveSchemaField("CBasePlayerPawn", "m_pMovementServices", sizeof(void*), g_syncSchema.movementServices) ||
             !ResolveSchemaField("CPlayer_MovementServices", "m_nButtons", 0, g_syncSchema.buttonState) ||
-            !ResolveSchemaField("CInButtonState", "m_pButtonStates", 0, g_syncSchema.buttonMask) ||
+            !ResolveSchemaField("CInButtonState", "m_pButtonStates", sizeof(ButtonStates), g_syncSchema.buttonMask) ||
             !ResolveSchemaField("CCSWeaponBase", "m_bInReload", sizeof(bool), g_syncSchema.reloading) ||
             !ResolveSchemaField("CBasePlayerWeapon", "m_pReserveAmmo", 0, g_syncSchema.reserve) ||
-            !ResolveSchemaField("CBasePlayerWeapon", "m_iClip1", sizeof(std::int32_t), g_syncSchema.clip)) return false;
+            !ResolveSchemaField("CBasePlayerWeapon", "m_iClip1", sizeof(std::int32_t), g_syncSchema.clip) ||
+            ProbeSchemaOffset("CBasePlayerPawn", "m_hController") < 0) return false;
+        if (g_syncSchema.buttonState.offset < 0 || g_syncSchema.buttonMask.offset < 0 ||
+            static_cast<std::size_t>(g_syncSchema.buttonMask.offset) + sizeof(ButtonStates) > g_syncSchema.buttonState.size) {
+            MissingSchema("CPlayer_MovementServices", "m_nButtons");
+            return false;
+        }
         g_syncSchema.ready = true;
         return true;
     } catch (...) {
@@ -224,7 +214,7 @@ bool RequiredSyncSchemaAvailable() noexcept {
 
 bool RequiredFullSchemaAvailable() noexcept {
     if (g_subclassOffset >= 0 && g_reserveClipsOffset >= 0) return true;
-    if (!RequiredSyncSchemaAvailable() || ProbeSchemaOffset("CBasePlayerPawn", "m_hController") < 0) return false;
+    if (!RequiredSyncSchemaAvailable()) return false;
     g_subclassOffset = ProbeSchemaOffset("CBaseEntity", "m_nSubclassID");
     g_reserveClipsOffset = ProbeSchemaOffset("CCSWeaponBaseVData", "m_bReserveAmmoAsClips");
     return g_subclassOffset >= 0 && g_reserveClipsOffset >= 0;
@@ -254,9 +244,15 @@ bool IsFullMagazine(const PlayerIdentity& player) noexcept {
     }
 }
 
-void* ResolveInputAddress() noexcept {
+void* ResolveInputAddress(bool synchronize) noexcept {
     try {
-        if (!RequiredImportsAvailable() || !EnsureEngine() || !RequiredSyncSchemaAvailable()) return nullptr;
+        if (!RequiredImportsAvailable(synchronize) || !EnsureEngine() || !RequiredSyncSchemaAvailable()) return nullptr;
+        if (synchronize && !g_syncSchema.tickReady) {
+            // GameTick_t boxes one int32; the native comparison also has a subtick fraction.
+            g_syncSchema.tickReady = ResolveSchemaField("CBasePlayerWeapon", "m_nNextPrimaryAttackTick",
+                                                        sizeof(std::int32_t), g_syncSchema.nextPrimaryAttackTick);
+            if (!g_syncSchema.tickReady) return nullptr;
+        }
         auto* const address = ProbeSignature(kInputSignature);
         if (!address) return nullptr;
         // Our installed detour has already validated this exact gamedata address.
@@ -277,7 +273,7 @@ bool ValidHandle(int handle) noexcept {
     }
 }
 
-bool ReadPlayer(int slot, PlayerIdentity& player) noexcept {
+bool ReadLife(int slot, PlayerLife& life) noexcept {
     try {
         if (slot < 0 || slot >= kMaxPlayers || slot >= s2sdk::GetMaxClients() ||
             !s2sdk::IsClientInGame(slot) || !s2sdk::IsClientAlive(slot)) {
@@ -285,14 +281,30 @@ bool ReadPlayer(int slot, PlayerIdentity& player) noexcept {
         }
         auto* const pawn = s2sdk::GetClientPawn(slot);
         const int controller = s2sdk::PlayerSlotToEntHandle(slot);
+        if (!pawn || !ValidHandle(controller)) return false;
         const int pawnHandle = s2sdk::EntPointerToEntHandle(pawn);
-        const int weapon = s2sdk::GetClientActiveWeapon(slot);
-        if (!pawn || controller == -1 || pawnHandle == -1 || !ValidHandle(controller) || !ValidHandle(pawnHandle) ||
-            !ValidHandle(weapon) || s2sdk::EntHandleToEntPointer(pawnHandle) != pawn ||
-            s2sdk::GetEntityOwner(weapon) != pawnHandle) {
+        if (!ValidHandle(pawnHandle) || s2sdk::EntHandleToEntPointer(pawnHandle) != pawn) {
             return false;
         }
-        player = {slot, controller, pawnHandle, weapon, pawn};
+        life = {slot, controller, pawnHandle, pawn};
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+int ActiveWeapon(const PlayerLife& life) {
+    const int weapon = s2sdk::GetClientActiveWeapon(life.slot);
+    return ValidHandle(weapon) && s2sdk::GetEntityOwner(weapon) == life.pawnHandle ? weapon : -1;
+}
+
+bool ReadPlayer(int slot, PlayerIdentity& player) noexcept {
+    try {
+        PlayerLife life;
+        if (!ReadLife(slot, life)) return false;
+        const int weapon = ActiveWeapon(life);
+        if (weapon == -1) return false;
+        player = {life, weapon};
         return true;
     } catch (...) {
         return false;
@@ -313,61 +325,31 @@ std::optional<PlayerIdentity> PlayerForWeapon(int weapon) noexcept {
             return std::nullopt;
         const auto controllerRef = controller->GetRefEHandle();
         const int slot = controllerRef.GetEntryIndex() - 1;
-        if (controllerRef.ToInt() != ToNativeHandle(controllerHandle) || slot < 0 ||
-            slot >= s2sdk::GetMaxClients() || !s2sdk::IsClientInGame(slot) ||
-            s2sdk::PlayerSlotToEntHandle(slot) != controllerHandle || s2sdk::GetClientPawn(slot) != pawn)
+        PlayerLife life;
+        if (controllerRef.ToInt() != ToNativeHandle(controllerHandle) || !ReadLife(slot, life) ||
+            life.controller != controllerHandle || life.pawn != pawn || life.pawnHandle != ownerHandle ||
+            s2sdk::GetClientActiveWeapon(slot) != weapon) {
             return std::nullopt;
-        PlayerIdentity player;
-        if (ReadPlayer(slot, player) && player.weapon == weapon && player.pawnHandle == ownerHandle) return player;
+        }
+        return PlayerIdentity{life, weapon};
     } catch (...) {
     }
     return std::nullopt;
 }
 
-void SetReceipt(std::size_t slot, const PlayerIdentity& player) noexcept {
-    if (slot >= g_fullReceipts.size()) return;
-    auto& receipt = g_fullReceipts[slot];
-    if (!receipt) ++g_fullReceiptCount;
-    receipt = player;
-}
-
-void ClearReceipt(std::size_t slot) noexcept {
-    if (slot >= g_fullReceipts.size()) return;
-    auto& receipt = g_fullReceipts[slot];
-    if (receipt) {
-        receipt.reset();
-        --g_fullReceiptCount;
-    }
-}
-
-bool SameLife(const PlayerIdentity& player) noexcept {
-    PlayerIdentity current;
-    return ReadPlayer(player.slot, current) && current.controller == player.controller &&
-           current.pawnHandle == player.pawnHandle && current.pawn == player.pawn;
+bool SameLife(const PlayerLife& player) noexcept {
+    PlayerLife current;
+    return ReadLife(player.slot, current) && current == player;
 }
 
 bool SameTarget(const PlayerIdentity& player) noexcept {
     PlayerIdentity current;
-    return ReadPlayer(player.slot, current) && current.controller == player.controller &&
-           current.pawnHandle == player.pawnHandle && current.pawn == player.pawn &&
-           current.weapon == player.weapon;
+    return ReadPlayer(player.slot, current) && current == player;
 }
 
-void* CurrentButtonState(const PlayerIdentity& player) noexcept {
-    try {
-        if (!SameLife(player)) return nullptr;
-        if (!RequiredSyncSchemaAvailable()) return nullptr;
-        auto* const movement = ReadAt<void*>(player.pawn, g_syncSchema.movementServices.offset);
-        if (!movement) return nullptr;
-        return static_cast<std::byte*>(movement) + g_syncSchema.buttonState.offset;
-    } catch (...) {
-        return nullptr;
-    }
-}
-
-std::uint64_t ButtonMask(void* state) {
-    if (!state) return 0;
-    return ReadAt<std::uint64_t>(state, g_syncSchema.buttonMask.offset);
+std::byte* CurrentButtonMask(const PlayerLife& player) noexcept {
+    auto* const movement = ReadAt<std::byte*>(player.pawn, g_syncSchema.movementServices.offset);
+    return movement ? movement + g_syncSchema.buttonState.offset + g_syncSchema.buttonMask.offset : nullptr;
 }
 
 std::optional<bool> ReloadState(const PlayerIdentity& player) noexcept {
@@ -381,12 +363,11 @@ std::optional<bool> ReloadState(const PlayerIdentity& player) noexcept {
 }
 
 bool ReloadButtonDown(const PlayerIdentity& player) noexcept {
-    try {
-        const auto mask = ButtonMask(CurrentButtonState(player));
-        return (mask & kReloadBit) != 0;
-    } catch (...) {
-        return false;
-    }
+    const auto* const buttons = CurrentButtonMask(player);
+    if (!buttons) return false;
+    ButtonStates states;
+    std::memcpy(states, buttons, sizeof(states));
+    return reload_sync::ReloadButtonDown(states);
 }
 
 polyhook::ResultType FullCapacity(polyhook::HookHandle handle,
@@ -396,7 +377,7 @@ polyhook::ResultType FullCapacity(polyhook::HookHandle handle,
                                   polyhook::CallbackType phase) noexcept {
     using Result = polyhook::ResultType;
     if (phase != polyhook::CallbackType::Pre || !parameters ||
-        (!g_fullMagazineEnabled && g_fullReceiptCount == 0)) return Result::Ignored;
+        (!g_fullMagazineEnabled && g_policy.fullReceiptCount == 0)) return Result::Ignored;
     const auto site = std::find_if(g_fullHooks.begin(), g_fullHooks.end(), [handle](const MidHook& hook) {
         return hook.handle == handle;
     });
@@ -415,80 +396,78 @@ polyhook::ResultType FullCapacity(polyhook::HookHandle handle,
 #endif
         if (!weapon || gap != 0 || reserve <= 0) return Result::Ignored;
         const int weaponHandle = s2sdk::EntPointerToEntHandle(weapon);
-        if (!g_fullMagazineEnabled && g_fullReceiptCount == 0) return Result::Ignored;
-
         bool transferSite = site->signature == "FunRounds::ReloadFullTransfer" ||
                             site->signature == "FunRounds::ReloadFullAlternateTransfer";
         bool admissionSite = site->signature == kFullAdmissionSignature.name() ||
                              site->signature == "FunRounds::ReloadFullStart";
 #if defined(__linux__)
-        auto* const frame = polyhook::GetRegister<void*>(registers, polyhook::RegisterType::RBP);
+        auto* const nativeFrame = polyhook::GetRegister<void*>(registers, polyhook::RegisterType::RBP);
         std::uintptr_t caller{};
-        if (!frame) return Result::Ignored;
-        std::memcpy(&caller, static_cast<const std::uint8_t*>(frame) + sizeof(std::uintptr_t), sizeof(caller));
+        if (!nativeFrame) return Result::Ignored;
+        std::memcpy(&caller, static_cast<const std::uint8_t*>(nativeFrame) + sizeof(std::uintptr_t), sizeof(caller));
         transferSite = caller == g_fullCallerReturns[2] || caller == g_fullCallerReturns[3];
         admissionSite = caller == g_fullCallerReturns[0] || caller == g_fullCallerReturns[1];
         if (!transferSite && !admissionSite) return Result::Ignored;
 #endif
         std::optional<PlayerIdentity>* authorization = nullptr;
         const bool receiptAuthorization = transferSite;
+        auto* const frame = g_untrackedDispatchDepth == 0 ? g_dispatch.Current() : nullptr;
         if (transferSite) {
             const auto current = PlayerForWeapon(weaponHandle);
             if (current) {
-                auto& receipt = g_fullReceipts[static_cast<std::size_t>(current->slot)];
+                auto& receipt = g_policy.fullReceipts[static_cast<std::size_t>(current->slot)];
                 if (receipt && receipt->weapon == weaponHandle) authorization = &receipt;
             }
-        } else if (admissionSite && g_fullMagazineEnabled && g_dispatchWeapon == weaponHandle) {
-            if (g_dispatchSlot >= 0 && g_dispatchSlot < kMaxPlayers) {
-                auto& attempt = g_fullAttempts[static_cast<std::size_t>(g_dispatchSlot)];
-                if (attempt && attempt->weapon == weaponHandle) authorization = &attempt;
-            }
-        }
-        if (!authorization && admissionSite && g_fullMagazineEnabled && g_dispatchWeapon == weaponHandle) {
-            auto candidate = PlayerForWeapon(weaponHandle);
-            if (candidate && IsFullMagazine(*candidate) && ReloadButtonDown(*candidate)) {
-                g_fullAttempts[static_cast<std::size_t>(candidate->slot)] = *candidate;
-                g_dispatchSlot = candidate->slot;
-                authorization = &g_fullAttempts[static_cast<std::size_t>(candidate->slot)];
+        } else if (admissionSite && g_fullMagazineEnabled && frame && frame->weapon == weapon) {
+            if (!frame->player) frame->player = PlayerForWeapon(weaponHandle);
+            if (frame->player) {
+                const auto& candidate = *frame->player;
+                auto& attempt = g_policy.fullAttempts[static_cast<std::size_t>(candidate.slot)];
+                if (attempt == candidate) {
+                    authorization = &attempt;
+                } else if (IsFullMagazine(candidate) && ReloadButtonDown(candidate)) {
+                    attempt = candidate;
+                    frame->ownsFullAttempt = true;
+                    authorization = &attempt;
+                }
             }
         }
         if ((!transferSite && !admissionSite) || (admissionSite && !g_fullMagazineEnabled))
             return Result::Ignored;
         if (!authorization || !*authorization || (*authorization)->weapon != weaponHandle) return Result::Ignored;
         if (!SameTarget(**authorization)) {
-            if (receiptAuthorization) ClearReceipt(static_cast<std::size_t>((*authorization)->slot));
+            if (receiptAuthorization) g_policy.ClearReceipt(static_cast<std::size_t>((*authorization)->slot));
             else authorization->reset();
             return Result::Ignored;
         }
         if (!IsFullMagazine(**authorization)) {
-            if (receiptAuthorization) ClearReceipt(static_cast<std::size_t>((*authorization)->slot));
+            if (receiptAuthorization) g_policy.ClearReceipt(static_cast<std::size_t>((*authorization)->slot));
             return Result::Ignored;
         }
 
         const auto reloading = ReloadState(**authorization);
         if (transferSite) {
             if (!reloading || !*reloading) {
-                ClearReceipt(static_cast<std::size_t>((*authorization)->slot));
+                g_policy.ClearReceipt(static_cast<std::size_t>((*authorization)->slot));
                 return Result::Ignored;
             }
         } else if (reloading && *reloading) {
             return Result::Ignored;
         } else if (!ReloadButtonDown(**authorization)) {
-            if (receiptAuthorization) ClearReceipt(static_cast<std::size_t>((*authorization)->slot));
-            else authorization->reset();
+            authorization->reset();
             return Result::Ignored;
         }
 
 #if !defined(_WIN32)
         if (gap == 0 && reserve > 0) {
             polyhook::SetRegisterUInt32(registers, polyhook::RegisterType::R12, 1);
-            if (receiptAuthorization) ClearReceipt(static_cast<std::size_t>((*authorization)->slot));
+            if (receiptAuthorization) g_policy.ClearReceipt(static_cast<std::size_t>((*authorization)->slot));
             return Result::Ignored;
         }
 #else
         if (gap == 0 && reserve > 0) {
             polyhook::SetRegisterUInt64(registers, polyhook::RegisterType::RAX, 1);
-            if (transferSite) ClearReceipt(static_cast<std::size_t>((*authorization)->slot));
+            if (transferSite) g_policy.ClearReceipt(static_cast<std::size_t>((*authorization)->slot));
             return Result::Ignored;
         }
 #endif
@@ -560,7 +539,7 @@ bool RemoveEvents() noexcept {
     for (std::size_t i = 0; i < kLifecycleEvents.size(); ++i) {
         if (!g_lifecycleEventsRegistered[i]) continue;
         try {
-            if (s2sdk::UnhookEvent(plg::string(kLifecycleEvents[i]), Event, s2sdk::HookMode::Post) ==
+            if (s2sdk::UnhookEvent(plg::string(kLifecycleEvents[i].first), Event, s2sdk::HookMode::Post) ==
                 s2sdk::EventHookError::Okay) {
                 g_lifecycleEventsRegistered[i] = false;
                 continue;
@@ -572,51 +551,35 @@ bool RemoveEvents() noexcept {
     return success;
 }
 
-void RestoreEdit(void* callbackWeapon) noexcept {
-    if (!g_edit.active || callbackWeapon != g_edit.weapon) return;
-    const ButtonEdit edit = g_edit;
-    g_edit = {};
-    try {
-        if (!SameLife(edit.target) || CurrentButtonState(edit.target) != edit.buttonState) return;
-        const auto mask = ButtonMask(edit.buttonState);
-        if ((mask & kReloadBit) != 0) {
-            (void)s2sdk::SetEntSchema2(edit.buttonState, plg::string("CInButtonState"), plg::string("m_pButtonStates"),
-                                       static_cast<std::int64_t>(mask & ~kReloadBit), false, 0);
-        }
-    } catch (...) {
-        Log("temporary IN_RELOAD restoration failed");
-    }
+void RestoreEdit(const DispatchFrame& frame) noexcept {
+    if (!frame.editedButtons || !SameLife(*frame.player) ||
+        CurrentButtonMask(*frame.player) != frame.editedButtons) return;
+    ButtonStates states;
+    std::memcpy(states, frame.editedButtons, sizeof(states));
+    // An edit only sets a previously clear bit; preserve all other input.
+    states[0] &= ~kReloadBit;
+    std::memcpy(frame.editedButtons, states, sizeof(states[0]));
 }
 
-void PrunePending() {
-    std::erase_if(g_pending, [](const PendingRequest& request) { return !SameTarget(request.target); });
-}
-
-void QueueOtherPlayers(const PlayerIdentity& source) {
+void QueueOtherPlayers(const PlayerLife& source, int tick) {
     const int count = std::min(s2sdk::GetMaxClients(), kMaxPlayers);
     for (int slot = 0; slot < count; ++slot) {
         if (slot == source.slot) continue;
-        PlayerIdentity target;
-        if (!ReadPlayer(slot, target)) continue;
-        const auto reloading = ReloadState(target);
-        if (!reloading || *reloading) continue;
-        const bool duplicate = std::any_of(g_pending.begin(), g_pending.end(), [&](const PendingRequest& pending) {
-            return pending.target.slot == target.slot && pending.target.controller == target.controller &&
-                   pending.target.pawnHandle == target.pawnHandle && pending.target.weapon == target.weapon;
-        });
-        if (!duplicate) {
-            g_pending.push_back({target});
-        }
+        PlayerLife life;
+        if (!ReadLife(slot, life)) continue;
+        const int active = ActiveWeapon(life);
+        const auto* weapon = active != -1 ? s2sdk::EntHandleToEntPointer(active) : nullptr;
+        g_policy.Queue(life, tick, ReadAt<bool>(weapon, g_syncSchema.reloading.offset));
     }
 }
 
 bool InstallInputHook() noexcept {
     try {
-        void* const address = ResolveInputAddress();
+        void* const address = ResolveInputAddress(false);
         const plg::vector<polyhook::DataType> arguments{polyhook::DataType::Pointer};
         DetourSlot slot(g_inputHook.address, g_inputHook.handle, &g_inputHook.attempted);
         if (!slot.Acquire(address, [&] {
-                return polyhook::HookDetour(address, polyhook::DataType::Int64, arguments, -1,
+                return polyhook::HookDetour(address, polyhook::DataType::Void, arguments, -1,
                                             plg::string("FunRounds::WeaponInputReloadSync"));
             }) || !slot.Add(polyhook::CallbackType::Pre, Input) ||
             !slot.Add(polyhook::CallbackType::Post, Input)) {
@@ -646,7 +609,7 @@ bool InstallEvents() noexcept {
     for (std::size_t i = 0; i < kLifecycleEvents.size(); ++i) {
         if (g_lifecycleEventsRegistered[i]) continue;
         try {
-            if (s2sdk::HookEvent(plg::string(kLifecycleEvents[i]), Event, s2sdk::HookMode::Post) !=
+            if (s2sdk::HookEvent(plg::string(kLifecycleEvents[i].first), Event, s2sdk::HookMode::Post) !=
                 s2sdk::EventHookError::Okay) {
                 return false;
             }
@@ -659,15 +622,15 @@ bool InstallEvents() noexcept {
 }
 
 bool HasFullReceipts() noexcept {
-    return g_fullReceiptCount != 0;
+    return g_policy.fullReceiptCount != 0;
 }
 
 void PruneFinishedReceipts() noexcept {
-    for (auto& receipt : g_fullReceipts) {
+    for (auto& receipt : g_policy.fullReceipts) {
         if (!receipt) continue;
         const auto reloading = ReloadState(*receipt);
         if (!SameTarget(*receipt) || !reloading || !*reloading)
-            ClearReceipt(static_cast<std::size_t>(receipt->slot));
+            g_policy.ClearReceipt(static_cast<std::size_t>(receipt->slot));
     }
 }
 
@@ -677,50 +640,72 @@ polyhook::ResultType Input(polyhook::HookHandle,
                            polyhook::ReturnHandle,
                            polyhook::CallbackType phase) noexcept {
     using Result = polyhook::ResultType;
-    void* callbackWeapon{};
     try {
-        callbackWeapon = polyhook::GetArgumentPointer(parameters, 0);
         if (phase == polyhook::CallbackType::Post) {
-            RestoreEdit(callbackWeapon);
-            const int postWeapon = callbackWeapon ? s2sdk::EntPointerToEntHandle(callbackWeapon) : -1;
-            if (g_dispatchSlot >= 0 && g_dispatchSlot < kMaxPlayers) {
-                auto& attempt = g_fullAttempts[static_cast<std::size_t>(g_dispatchSlot)];
-                if (attempt && attempt->weapon == postWeapon) attempt.reset();
+            if (g_untrackedDispatchDepth != 0) {
+                --g_untrackedDispatchDepth;
+                return Result::Ignored;
             }
-            g_dispatchWeapon = -1;
-            g_dispatchSlot = -1;
+            if (!g_dispatch.Current()) return Result::Ignored;
+            const auto frame = g_dispatch.Pop();
+            RestoreEdit(frame);
+            if (!frame.player) return Result::Ignored;
+
+            const auto& player = *frame.player;
+            auto& attempt = g_policy.fullAttempts[static_cast<std::size_t>(player.slot)];
+            if (frame.ownsFullAttempt && attempt == player) attempt.reset();
+            if (!g_enabled || (!frame.attempted && !frame.ShouldBroadcast(true))) return Result::Ignored;
+
+            const bool sameWeapon = SameTarget(player);
+            const bool nowReloading = sameWeapon && ReadAt<bool>(frame.weapon, g_syncSchema.reloading.offset);
+            if (!frame.wasReloading && nowReloading) g_dispatch.ObserveNestedReload(player);
+            const int tick = s2sdk::GetGameTickCount();
+            if (frame.attempted) {
+                const bool accepted = frame.weaponReloadFired || nowReloading;
+                const bool rejected = !accepted && sameWeapon &&
+                    ReadyToReject(ReadAt<std::int32_t>(frame.weapon, g_syncSchema.clip.offset),
+                                  ReadAt<std::int32_t>(frame.weapon, g_syncSchema.nextPrimaryAttackTick.offset), tick);
+                g_policy.Finish(player, tick, accepted, rejected);
+            }
+            if (frame.ShouldBroadcast(nowReloading)) QueueOtherPlayers(player, tick);
             return Result::Ignored;
         }
-        if (!callbackWeapon) return Result::Ignored;
-
-        const int weaponHandle = s2sdk::EntPointerToEntHandle(callbackWeapon);
-        g_dispatchWeapon = weaponHandle;
-        g_dispatchSlot = -1;
-        if (!g_enabled || g_edit.active) return Result::Ignored;
-        const auto found = std::find_if(g_pending.begin(), g_pending.end(), [weaponHandle](const PendingRequest& request) {
-            return request.target.weapon == weaponHandle;
-        });
-        if (found == g_pending.end()) return Result::Ignored;
-        const PlayerIdentity target = found->target;
-        g_pending.erase(found); // Consume at most one native attempt for this recipient.
-        const auto reloading = ReloadState(target);
-        if (!SameTarget(target) || target.weapon != weaponHandle || !reloading || *reloading) return Result::Ignored;
-        void* const buttonState = CurrentButtonState(target);
-        if (!buttonState) return Result::Ignored;
-        const auto before = ButtonMask(buttonState);
-        if ((before & kReloadBit) != 0) return Result::Ignored;
-
-        g_edit = {true, target, callbackWeapon, buttonState};
-        (void)s2sdk::SetEntSchema2(buttonState, plg::string("CInButtonState"), plg::string("m_pButtonStates"),
-                                   static_cast<std::int64_t>(before | kReloadBit), false, 0);
-        if ((ButtonMask(buttonState) & kReloadBit) == 0) {
-            g_edit = {};
+        if (g_untrackedDispatchDepth != 0) {
+            ++g_untrackedDispatchDepth;
             return Result::Ignored;
+        }
+        DispatchFrame* frame{};
+        try {
+            frame = &g_dispatch.Push(polyhook::GetArgumentPointer(parameters, 0));
+        } catch (...) {
+            // Do not let an untracked invocation's Post pop its enclosing frame.
+            ++g_untrackedDispatchDepth;
+            return Result::Ignored;
+        }
+        if (!frame->weapon || !g_enabled) return Result::Ignored;
+        frame->player = PlayerForWeapon(s2sdk::EntPointerToEntHandle(frame->weapon));
+        if (!frame->player) return Result::Ignored;
+
+        const auto& player = *frame->player;
+        frame->wasReloading = ReadAt<bool>(frame->weapon, g_syncSchema.reloading.offset);
+        const bool pending = g_policy.Begin(player, s2sdk::GetGameTickCount(), frame->wasReloading);
+        if (!pending && !g_dispatch.IsNested()) return Result::Ignored;
+        auto* const buttons = CurrentButtonMask(player);
+        if (!buttons) return Result::Ignored;
+        frame->attempted = pending;
+        ButtonStates states;
+        std::memcpy(states, buttons, sizeof(states));
+        if (reload_sync::ReloadButtonDown(states)) {
+            frame->synthetic = g_dispatch.IsNested() && (states[2] & kReloadBit) == 0 &&
+                g_dispatch.IsInjected(player, buttons);
+        } else if (pending) {
+            frame->synthetic = true;
+            frame->editedButtons = buttons;
+            states[0] |= kReloadBit;
+            std::memcpy(buttons, states, sizeof(states[0]));
         }
     } catch (...) {
-        RestoreEdit(callbackWeapon);
-        g_dispatchWeapon = -1;
-        g_dispatchSlot = -1;
+        Log("reload input inspection failed");
     }
     return Result::Ignored;
 }
@@ -729,41 +714,37 @@ s2sdk::ResultType Event(const plg::string& name, void* event, bool) noexcept {
     try {
         const std::string_view eventName(name.c_str());
         if (eventName == "round_end") {
-            g_pending.clear();
-            g_fullAttempts.fill(std::nullopt);
+            g_policy.OnRoundEnd();
             return s2sdk::ResultType::Continue;
         }
         if (!event) return s2sdk::ResultType::Continue;
-        if (std::find(kLifecycleEvents.begin(), kLifecycleEvents.end(), eventName) != kLifecycleEvents.end()) {
+        const auto lifecycle = std::find_if(kLifecycleEvents.begin(), kLifecycleEvents.end(), [&](const auto& entry) {
+            return entry.first == eventName;
+        });
+        if (lifecycle != kLifecycleEvents.end()) {
             const int slot = s2sdk::GetEventPlayerSlot(event, plg::string("userid"));
-            std::erase_if(g_pending, [slot](const PendingRequest& request) { return request.target.slot == slot; });
-            if (slot >= 0 && slot < kMaxPlayers) {
-                g_fullAttempts[static_cast<std::size_t>(slot)].reset();
-                ClearReceipt(static_cast<std::size_t>(slot));
-            }
+            g_policy.OnPlayerEvent(lifecycle->second, slot);
             return s2sdk::ResultType::Continue;
         }
-        if (eventName != "weapon_reload" || !event) return s2sdk::ResultType::Continue;
+        if (eventName != "weapon_reload") return s2sdk::ResultType::Continue;
         const int slot = s2sdk::GetEventPlayerSlot(event, plg::string("userid"));
-        if (g_fullMagazineEnabled) {
-            PlayerIdentity source;
-            if (ReadPlayer(slot, source) && source.slot >= 0 && source.slot < kMaxPlayers &&
-                g_fullAttempts[static_cast<std::size_t>(source.slot)] &&
-                SameTarget(*g_fullAttempts[static_cast<std::size_t>(source.slot)]) &&
-                IsFullMagazine(source) && ReloadButtonDown(source)) {
-                const auto index = static_cast<std::size_t>(source.slot);
-                SetReceipt(index, source);
-                g_fullAttempts[index].reset();
+        PlayerLife life;
+        if (!ReadLife(slot, life)) return s2sdk::ResultType::Continue;
+        const PlayerIdentity source{life, ActiveWeapon(life)};
+        if (g_fullMagazineEnabled && source.weapon != -1) {
+            const auto index = static_cast<std::size_t>(slot);
+            auto& attempt = g_policy.fullAttempts[index];
+            if (attempt == source && IsFullMagazine(source) && ReloadButtonDown(source)) {
+                g_policy.SetReceipt(index, source);
+                attempt.reset();
             }
         }
-        if (g_edit.active && g_edit.target.slot == slot) return s2sdk::ResultType::Continue;
-        if (!g_enabled) return s2sdk::ResultType::Continue;
-        PlayerIdentity source;
-        if (!ReadPlayer(slot, source)) return s2sdk::ResultType::Continue;
-        void* const buttonState = CurrentButtonState(source);
-        if (!buttonState || (ButtonMask(buttonState) & kReloadBit) == 0) return s2sdk::ResultType::Continue;
-        PrunePending();
-        QueueOtherPlayers(source);
+        const bool synthetic = g_untrackedDispatchDepth == 0 && g_dispatch.ObserveReloadEvent(source);
+        if (g_enabled) {
+            const int tick = s2sdk::GetGameTickCount();
+            g_policy.Finish(life, tick, true, false);
+            if (!synthetic) QueueOtherPlayers(life, tick);
+        }
     } catch (...) {
         Log("weapon_reload event inspection failed");
     }
@@ -773,7 +754,7 @@ s2sdk::ResultType Event(const plg::string& name, void* event, bool) noexcept {
 } // namespace
 
 bool HasReloadSyncSupport() noexcept {
-    void* const address = ResolveInputAddress();
+    void* const address = ResolveInputAddress(true);
     if (!address) return false;
     try {
         const auto existing = polyhook::FindDetour(address);
@@ -784,7 +765,7 @@ bool HasReloadSyncSupport() noexcept {
 }
 
 bool HasFullMagazineReloadSupport() noexcept {
-    if (!ResolveInputAddress() || !FullReloadImportsAvailable() || !RequiredFullSchemaAvailable()) return false;
+    if (!ResolveInputAddress(false) || !FullReloadImportsAvailable() || !RequiredFullSchemaAvailable()) return false;
     for (std::size_t i = 0; i < kFullSignatures.size(); ++i) {
         void* const address = ResolveFullAddress(kFullSignatures[i]);
         if (!address) return false;
@@ -799,14 +780,12 @@ enum class ReloadPolicyResult : std::int32_t { Failed, Settled, Draining };
 ReloadPolicyResult StopReloadPolicy(bool immediate) noexcept {
     g_enabled = false;
     g_fullMagazineEnabled = false;
-    g_pending.clear();
-    g_fullAttempts.fill(std::nullopt);
-    RestoreEdit(g_edit.weapon);
-    g_dispatchWeapon = -1;
-    g_dispatchSlot = -1;
+    g_policy.OnRoundEnd();
+    while (g_dispatch.Current()) RestoreEdit(g_dispatch.Pop());
+    g_untrackedDispatchDepth = 0;
     if (immediate) {
-        g_fullReceipts.fill(std::nullopt);
-        g_fullReceiptCount = 0;
+        g_policy.fullReceipts.fill(std::nullopt);
+        g_policy.fullReceiptCount = 0;
         g_subclassOffset = -1;
         g_reserveClipsOffset = -1;
 #if defined(__linux__)
@@ -835,9 +814,9 @@ ReloadPolicyResult UpdateReloadPolicy(bool synchronize, bool allowFullMagazine, 
     }
     g_enabled = synchronize;
     g_fullMagazineEnabled = allowFullMagazine;
-    if (!synchronize) g_pending.clear();
+    if (!synchronize) g_policy.ClearPending();
     if (!allowFullMagazine) {
-        g_fullAttempts.fill(std::nullopt);
+        g_policy.fullAttempts.fill(std::nullopt);
         if (HasFullReceipts()) {
             PruneFinishedReceipts();
             if (HasFullReceipts()) return ReloadPolicyResult::Draining;
