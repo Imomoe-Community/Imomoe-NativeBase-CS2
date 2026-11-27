@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/v3.1.0/schemas/plugin.schema.json",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "name": "s2sdk",
   "description": "Test-local S2SDK provider for the imomoe-native-base loader fixture",
   "author": "FunRounds native tests",
