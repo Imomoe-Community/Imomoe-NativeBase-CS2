@@ -4,7 +4,7 @@
   "name": "ghost_visibility_minimal",
   "description": "Isolated CS2 BOT target-visibility gate diagnostic; never distribute with gameplay.",
   "author": "FunRounds native tests",
-  "website": "https://github.com/Mai-Ooizumi/Imomoe-FunRounds-CS2",
+  "website": "https://github.com/Imomoe-Community/Imomoe-NativeBase-CS2",
   "license": "AGPL-3.0-or-later",
   "entry": "bin/ghost-visibility-minimal",
   "platforms": [],

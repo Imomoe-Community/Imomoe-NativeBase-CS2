@@ -4,7 +4,7 @@
   "name": "entity_damage_minimal",
   "description": "Test-only owned-chicken damage observer and suppressor for the native entity damage seam.",
   "author": "FunRounds native tests",
-  "website": "https://github.com/Mai-Ooizumi/Imomoe-FunRounds-CS2",
+  "website": "https://github.com/Imomoe-Community/Imomoe-NativeBase-CS2",
   "license": "AGPL-3.0-or-later",
   "entry": "bin/entity-damage-minimal",
   "platforms": [],

@@ -4,7 +4,7 @@
   "name": "s2sdk",
   "description": "Test-local S2SDK provider for the imomoe-native-base loader fixture",
   "author": "FunRounds native tests",
-  "website": "https://github.com/Mai-Ooizumi/Imomoe-FunRounds-CS2",
+  "website": "https://github.com/Imomoe-Community/Imomoe-NativeBase-CS2",
   "license": "AGPL-3.0-or-later",
   "entry": "bin/s2sdk",
   "platforms": [],

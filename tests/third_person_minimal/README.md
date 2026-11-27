@@ -12,7 +12,7 @@ then calls the real pawn eye function: the native no-camera baseline, registered
 own camera, different external camera while the Hook remains installed, clean
 detach and reattachment. It compares all three components and requires distinct
 camera/pawn origins. Both platform raw ABI and two-BOT 64/96-distance eye checks have passed;
-input identity, retained driver failures and current scope are in [STATUS](../../../docs/STATUS.md). Actual gun/knife/grenade/Use paths and client visuals follow the
+input identity, retained driver failures and current scope are in the repository changelog and verification notes. Actual gun/knife/grenade/Use paths and client visuals follow the
 minimal boundary gate, as recorded in the current plan and status.
 ## Build without changing the product
 
@@ -79,9 +79,9 @@ The minimal checks do not automate player input. Actual attack/Use origins and n
 IDA inspected the task-local database snapshots under `.work/third-person-abi-resume-r1`.
 The raw `server-win64.dll` and `server-linux.so` inputs are retained there;
 the consumed IDA caches can be regenerated from those modules.
-The Windows snapshot's input was `D:\dev\imomoe-funrounds-cs2svr\game\csgo\bin\win64\server.dll`;
+The Windows snapshot's input was `<cs2-win64>\game\csgo\bin\win64\server.dll`;
 the Linux input is the task-local copy of
-`/home/mai/funrounds-acceptance/cs2-update-20261023/server/game/csgo/bin/linuxsteamrt64/libserver.so`.
+`<cs2-linux>/game/csgo/bin/linuxsteamrt64/libserver.so`.
 Windows `server.dll` `sub_180B55060` takes `(pawn=RCX, output=RDX)`; its active-camera
 call at `0x180B55093` returns to `0x180B5509A` with pawn in `RDI` and output buffer
 in `RBX`, a narrow post-camera output site. The DB input and raw Windows module agree

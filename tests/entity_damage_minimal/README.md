@@ -65,7 +65,7 @@ compiler. From Ubuntu WSL, with the repository mounted at `/workspace`:
 
 ```bash
 docker run --rm --network none --user "$(id -u):$(id -g)" --env HOME=/tmp \
-  --volume /mnt/d/git/Imomoe-FunRounds-CS2:/workspace --workdir /workspace \
+  --volume "$PWD":/workspace --workdir /workspace \
   funrounds-steamrt-gcc14:sniper-20260928-gcc14.2.0 \
   cmake -S tests/entity_damage_minimal \
     -B .work/entity-damage-minimal/build-linux-sniper-r1 -G Ninja \
@@ -74,7 +74,7 @@ docker run --rm --network none --user "$(id -u):$(id -g)" --env HOME=/tmp \
     -DFUNROUNDS_S2SDK_GENERATED_INCLUDE_DIR=/workspace/.work/install-layout-basic-modes/build-linux/generated-s2sdk/external/plugify/include \
     -DFUNROUNDS_NATIVE_GENERATED_INCLUDE_DIR=/workspace/.work/entity-damage-minimal/generated-native/external/plugify/include
 docker run --rm --network none --user "$(id -u):$(id -g)" --env HOME=/tmp \
-  --volume /mnt/d/git/Imomoe-FunRounds-CS2:/workspace --workdir /workspace \
+  --volume "$PWD":/workspace --workdir /workspace \
   funrounds-steamrt-gcc14:sniper-20260928-gcc14.2.0 \
   cmake --build .work/entity-damage-minimal/build-linux-sniper-r1 \
     --target entity_damage_minimal --parallel 4
